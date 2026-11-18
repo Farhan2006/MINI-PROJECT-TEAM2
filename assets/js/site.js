@@ -509,14 +509,20 @@
     }
 
     /* hidden admin entry: Ctrl+Shift+A, or triple-click the footer */
-    document.addEventListener("keydown", function (e) { if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) { e.preventDefault(); location.href = "admin.html"; } });
+    document.addEventListener("keydown", function (e) { if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) { e.preventDefault(); location.href = "/admin"; } });
+    /* works in every browser: just type the word "admin" anywhere on a page (not inside a field) */
+    var typed = "";
+    document.addEventListener("keydown", function (e) {
+      var t = e.target && e.target.tagName; if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
+      typed = (typed + e.key.toLowerCase()).slice(-5); if (typed === "admin") { typed = ""; location.href = "/admin"; }
+    });
     var ft = document.querySelector("footer");
-    if (ft) ft.addEventListener("click", function (e) { if (e.detail === 3) location.href = "admin.html"; });
+    if (ft) ft.addEventListener("click", function (e) { if (e.detail === 3) location.href = "/admin"; });
 
     /* a small "preview" ribbon when this browser is showing unpublished admin edits */
     try {
       if (localStorage.getItem("vdt_site_override") && !/[?&]nooverride/.test(location.search)) {
-        var rb = document.createElement("a"); rb.className = "ribbon"; rb.href = "admin.html"; rb.textContent = "Previewing unpublished edits · open admin";
+        var rb = document.createElement("a"); rb.className = "ribbon"; rb.href = "/admin"; rb.textContent = "Previewing unpublished edits · open admin";
         document.body.appendChild(rb);
       }
     } catch (e) {}
