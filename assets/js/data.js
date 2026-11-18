@@ -11,25 +11,21 @@ window.SITE = {
   school: "School of Electrical and Electronics Engineering · KLE Technological University, Hubballi",
   theme: "Theme 1", artefact: "Artefact 1", teamNo: "02",
 
-  /* Team photo: drop a file at assets/img/team.jpg and set this to "assets/img/team.jpg" */
+  /* Team photo: upload it in admin.html, or set a path like "assets/img/team.jpg". showTeamPhoto:false hides the block. */
   teamPhoto: "",
+  showTeamPhoto: true,
 
   members: [
-    { name: "Swaroop T",       usn: "01FE24BEV012", email: "01fe24bev012@kletech.ac.in", subsystem: "TODO — subsystem owned" },
-    { name: "Veerabhadrayya",  usn: "01FE24BEV020", email: "01fe24bev020@kletech.ac.in", subsystem: "TODO — subsystem owned" },
-    { name: "Farhan B",        usn: "01FE24BEV022", email: "01fe24bev022@kletech.ac.in", subsystem: "TODO — subsystem owned" },
-    { name: "Shrihari U",      usn: "01FE24BEV023", email: "01fe24bev023@kletech.ac.in", subsystem: "TODO — subsystem owned" }
+    { name: "Swaroop T",       usn: "01FE24BEV012", email: "01fe24bev012@kletech.ac.in", photo: "" },
+    { name: "Veerabhadrayya",  usn: "01FE24BEV020", email: "01fe24bev020@kletech.ac.in", photo: "" },
+    { name: "Farhan B",        usn: "01FE24BEV022", email: "01fe24bev022@kletech.ac.in", photo: "" },
+    { name: "Shrihari U",      usn: "01FE24BEV023", email: "01fe24bev023@kletech.ac.in", photo: "" }
   ],
   faculty: [
-    { name: "Sujata S Kotabagi",       dept: "Department of VLSI" },
+    { name: "Sujata S Kotabagi",       dept: "Head of Department of VLSI" },
     { name: "Pooja Goudar",       dept: "Department of VLSI" },
     { name: "Vaishnavi Chandavari", dept: "Department of VLSI" },
     { name: "Asmita Aiholi",      dept: "Department of VLSI" }
-  ],
-
-  /* Contribution table — updated each review */
-  contributions: [
-    // { review: "Review 1", member: "Swaroop T", work: "Background study of ..." }
   ],
 
   /* Latest update shown on Home */
