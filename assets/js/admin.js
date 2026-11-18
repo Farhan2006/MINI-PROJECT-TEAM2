@@ -10,6 +10,9 @@
   try { var saved = localStorage.getItem(KEY); data = saved ? Object.assign({}, ORIGINAL, JSON.parse(saved)) : JSON.parse(JSON.stringify(ORIGINAL)); }
   catch (e) { data = JSON.parse(JSON.stringify(ORIGINAL)); }
   delete data.contributions; /* removed from the site */
+  (data.members || []).forEach(function (m) { delete m.subsystem; if (m.photo == null) m.photo = ""; }); /* subsystem removed from the site */
+  if (data.showTeamPhoto == null) data.showTeamPhoto = true;
+  (data.faculty || []).forEach(function (f) { if (/Sujata/i.test(f.name) && f.dept === "Department of VLSI") f.dept = "Head of Department of VLSI"; });
 
   /* ---------- helpers ---------- */
   function h(tag, attrs, kids) {
@@ -50,13 +53,15 @@
 
   var SECTIONS = [
     { g: "Overview", id: "general", n: "0", title: "Home and general", sub: "Title, subtitle, dates and the 16-step progress strip shown on the Home page.", blocks: [
-      { f: [T("title", "Project title", { full: true }), T("subtitle", "Subtitle", { full: true }), T("dept", "Department", { full: true }), T("school", "School / university", { full: true }), T("slug", "Project slug"), T("theme", "Theme"), T("artefact", "Artefact"), T("teamNo", "Team number"), T("teamPhoto", "Team photo path (assets/img/team.jpg)", { full: true })] },
+      { f: [T("title", "Project title", { full: true }), T("subtitle", "Subtitle", { full: true }), T("dept", "Department", { full: true }), T("school", "School / university", { full: true }), T("slug", "Project slug"), T("theme", "Theme"), T("artefact", "Artefact"), T("teamNo", "Team number"),
+        { k: "showTeamPhoto", l: "Team photo on the Home page", t: "bool", def: true, full: true, yes: "Show the team photo (untick to hide the whole block)" },
+        { k: "teamPhoto", l: "Team photo", t: "image", full: true, max: 1800, wide: true }] },
       { path: "latest", label: "Latest update (Home)", f: [D("date", "Date"), A("text", "Text")] },
       { f: [D("defaultUpdated", "Default 'last updated' date for pages")], label: "Page dates" },
       { path: "steps", label: "Design steps", hint: "Status drives the progress strip: done, progress or next.", rows: [N("n", "Step number"), T("label", "Label"), S("status", "Status", ["done", "progress", "next"])], title: "label", noReorder: false }
     ] },
-    { g: "Overview", id: "team", n: "1", title: "Team and roles", sub: "Members, the subsystem each owns, and faculty guides.", blocks: [
-      { path: "members", label: "Members", rows: [T("name", "Name"), T("usn", "USN"), T("email", "Email", { full: true }), T("subsystem", "Subsystem owned", { full: true })], title: "name" },
+    { g: "Overview", id: "team", n: "1", title: "Team and roles", sub: "Members with photos, and faculty guides. A member without a photo shows a blank frame.", blocks: [
+      { path: "members", label: "Members", rows: [{ k: "photo", l: "Photo", t: "image", full: true, max: 800 }, T("name", "Name"), T("usn", "USN"), T("email", "Email", { full: true })], title: "name" },
       { path: "faculty", label: "Faculty guides", rows: [T("name", "Name"), T("dept", "Department")], title: "name" }
     ] },
     { g: "Design chain", id: "problem", n: "2", title: "Problem and need", sub: "Need statement, design inputs, background study and candidate requirements.", blocks: [
@@ -140,10 +145,46 @@
   /* ---------- field renderers ---------- */
   function defFor(cols) {
     var o = {};
-    cols.forEach(function (c) { o[c.k] = c.t === "num" ? 0 : c.t === "bool" ? false : c.t === "sel" ? c.o[0] : c.t === "rows" || c.t === "csv" ? [] : c.t === "scores" ? {} : ""; });
+    cols.forEach(function (c) { o[c.k] = c.t === "num" ? 0 : c.t === "bool" ? !!c.def : c.t === "sel" ? c.o[0] : c.t === "rows" || c.t === "csv" ? [] : c.t === "scores" ? {} : ""; });
     return o;
   }
+  /* ---- images: resized in the browser, kept as data URLs until published ---- */
+  function isDataUrl(s) { return typeof s === "string" && s.slice(0, 11) === "data:image/"; }
+  function readImage(file, max, cb) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var s = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        cb(c.toDataURL("image/jpeg", 0.86));
+      };
+      img.onerror = function () { alert("That file could not be read as an image."); };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  function imageEl(c, obj) {
+    var wrap = h("div", { class: "cp-f" + (c.full ? " full" : "") }, [h("label", { text: c.l })]);
+    var thumb = h("div", { class: "cp-thumb" + (c.wide ? " wide" : "") }), pathIn = h("input", { type: "text", placeholder: "…or a path / URL, e.g. assets/img/photo.jpg" });
+    var file = h("input", { type: "file", accept: "image/*", style: "display:none" });
+    var upBtn = h("button", { class: "cp-btn sm", type: "button", onclick: function () { file.click(); } });
+    var rmBtn = h("button", { class: "cp-btn sm danger", type: "button", text: "Remove", onclick: function () { obj[c.k] = ""; changed(); paint(); } });
+    function paint() {
+      var v = obj[c.k] || ""; thumb.innerHTML = "";
+      if (v) thumb.appendChild(h("img", { src: v, alt: "" })); else thumb.appendChild(h("span", { text: "No photo" }));
+      upBtn.textContent = v ? "Replace photo" : "Upload photo"; rmBtn.style.display = v ? "" : "none";
+      pathIn.value = isDataUrl(v) ? "" : v; pathIn.placeholder = isDataUrl(v) ? "Uploaded photo (saved when you publish)" : "…or a path / URL, e.g. assets/img/photo.jpg";
+    }
+    file.addEventListener("change", function () { if (file.files[0]) readImage(file.files[0], c.max || 1200, function (u) { obj[c.k] = u; changed(); paint(); toast("Photo ready"); }); file.value = ""; });
+    pathIn.addEventListener("input", function () { if (!isDataUrl(obj[c.k]) || pathIn.value) { obj[c.k] = pathIn.value.trim(); changed(); var v = obj[c.k]; thumb.innerHTML = ""; if (v) thumb.appendChild(h("img", { src: v, alt: "" })); else thumb.appendChild(h("span", { text: "No photo" })); upBtn.textContent = v ? "Replace photo" : "Upload photo"; rmBtn.style.display = v ? "" : "none"; } });
+    paint();
+    wrap.appendChild(h("div", { class: "cp-img" }, [thumb, h("div", { class: "cp-img-side" }, [h("div", { class: "cp-row-h" }, [upBtn, rmBtn, file]), pathIn])]));
+    return wrap;
+  }
   function fieldEl(c, obj, rerender) {
+    if (c.t === "image") return imageEl(c, obj);
     var wrap = h("div", { class: "cp-f" + (c.full ? " full" : "") });
     var id = "f" + Math.random().toString(36).slice(2, 8);
     if (c.t === "rows") {
@@ -165,8 +206,8 @@
       wrap.appendChild(grid); return wrap;
     }
     if (c.t === "bool") {
-      var cb = h("input", { type: "checkbox", onchange: function () { obj[c.k] = cb.checked; changed(); } }); cb.checked = !!obj[c.k];
-      wrap.appendChild(h("label", { text: c.l })); wrap.appendChild(h("label", { class: "chk" }, [cb, "Yes"])); return wrap;
+      var cb = h("input", { type: "checkbox", onchange: function () { obj[c.k] = cb.checked; changed(); } }); cb.checked = obj[c.k] == null ? !!c.def : !!obj[c.k];
+      wrap.appendChild(h("label", { text: c.l })); wrap.appendChild(h("label", { class: "chk" }, [cb, c.yes || "Yes"])); return wrap;
     }
     wrap.appendChild(h("label", { for: id, text: c.l }));
     var el, val = obj[c.k];
@@ -261,8 +302,22 @@
         if (!t) return say("Paste a GitHub token first.", "err");
         localStorage.setItem("vdt_gh_repo", r); localStorage.setItem("vdt_gh_branch", b); sessionStorage.setItem("vdt_gh_token", t);
         var url = "https://api.github.com/repos/" + r + "/contents/assets/js/data.js", hd = { Authorization: "Bearer " + t, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
-        say("Reading current data.js…");
-        fetch(url + "?ref=" + encodeURIComponent(b), { headers: hd }).then(function (res) {
+        var imgs = [];
+        if (isDataUrl(data.teamPhoto)) imgs.push({ kind: "team", obj: data, key: "teamPhoto" });
+        (data.members || []).forEach(function (m, i) { if (isDataUrl(m.photo)) imgs.push({ kind: "member-" + (i + 1), obj: m, key: "photo" }); });
+        say(imgs.length ? "Uploading " + imgs.length + " photo(s)…" : "Reading current data.js…");
+        var chain = Promise.resolve();
+        imgs.forEach(function (it, i) {
+          chain = chain.then(function () {
+            var path = "assets/img/" + it.kind + "-" + Date.now().toString(36) + i + ".jpg";
+            return fetch("https://api.github.com/repos/" + r + "/contents/" + path, { method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, hd), body: JSON.stringify({ message: "Add " + path, content: it.obj[it.key].split(",")[1], branch: b }) })
+              .then(function (res) { return res.json().then(function (j) { if (!res.ok) throw new Error((j && j.message) || ("GitHub said " + res.status + " while uploading a photo")); it.obj[it.key] = path; changed(); }); });
+          });
+        });
+        chain.then(function () {
+          say("Reading current data.js…");
+          return fetch(url + "?ref=" + encodeURIComponent(b), { headers: hd });
+        }).then(function (res) {
           if (res.status === 404) return null;
           if (!res.ok) throw new Error("GitHub said " + res.status + " while reading (check token, repo and branch).");
           return res.json();

@@ -26,7 +26,7 @@
   /* ---------------- page map (from the Guide's site structure) ---------------- */
   var PAGES = [
     { id: "home", file: "index.html", num: 0, short: "Home", title: "Home", group: "Overview", steps: "—", due: "Review 1", holds: "" },
-    { id: "team", file: "team.html", num: 1, short: "Team", title: "Team and Roles", group: "Overview", steps: "—", due: "Review 1", holds: "Members, the subsystem each owns, and contact details." },
+    { id: "team", file: "team.html", num: 1, short: "Team", title: "Team and Roles", group: "Overview", steps: "—", due: "Review 1", holds: "The team members, faculty guides and contact details." },
     { id: "problem", file: "problem.html", num: 2, short: "Problem", title: "Problem and Need", group: "Design chain", steps: "01", due: "Review 1", holds: "The need in terms of what is required, quantified design inputs, background study, and three candidate functional requirements." },
     { id: "concepts", file: "concepts.html", num: 3, short: "Concepts", title: "Concept Choices", group: "Design chain", steps: "02", due: "Review 2", holds: "At least three alternatives with sketches, a weighted comparison, the chosen concept and why, and what is in and out of scope." },
     { id: "requirements", file: "requirements.html", num: 4, short: "Requirements", title: "Functional Requirements", group: "Design chain", steps: "03", due: "Review 3", holds: "The live FR table with number, method, source and status, plus the change history of any FR after freeze." },
@@ -170,8 +170,9 @@
       return '<a class="pcard glass spot lift ' + rv() + '" href="' + link(p) + '"><div class="n"><span>' + String(p.num).padStart(2, "0") + "</span><span>" + (p.steps === "—" ? "" : (p.steps === "all" ? "All steps" : "Step " + p.steps)) + "</span></div><h3>" + esc(p.title) + "</h3><p>" + esc(p.due) + "</p></a>";
     }).join("");
     var photo = S.teamPhoto
-      ? '<img src="' + esc(S.teamPhoto) + '" alt="Team 02">'
-      : '<div class="ph">Team photo<br><small>Add assets/img/team.jpg and set <code>teamPhoto</code> in data.js</small></div>';
+      ? '<img src="' + esc(S.teamPhoto) + '" alt="Team ' + esc(S.teamNo) + '">'
+      : '<div class="ph">Team photo</div>';
+    var teamPhotoBlock = S.showTeamPhoto === false ? "" : '<div class="team-photo glass reveal" style="--d:5">' + photo + "</div>";
     var nb = (S.notebook && S.notebook[0]) || null;
     return '<section class="hero">' +
       '<div class="eyebrow reveal">' + esc(S.theme) + " · " + esc(S.artefact) + " · Team " + esc(S.teamNo) + "</div>" +
@@ -179,7 +180,7 @@
       '<p class="lede reveal" style="--d:2">' + esc(S.subtitle) + "</p>" +
       '<div class="chips reveal" style="--d:3"><span class="chip"><b>EE-VDT</b> · KLE Technological University, Hubballi</span><span class="chip">' + esc(S.slug) + "</span></div>" +
       '<div class="hero-cta reveal" style="--d:4"><a class="btn primary" href="problem.html">Start with the problem</a><a class="btn ghost" href="notebook.html">Read the notebook</a></div>' +
-      '<div class="team-photo glass reveal" style="--d:5">' + photo + "</div></section>" +
+      teamPhotoBlock + "</section>" +
       sec("Progress", done + " of 16 design steps complete.",
         '<div class="glass pad ' + rv() + '"><div class="strip">' + strip + '</div><div class="strip-labels">' + labels + "</div>" +
         '<div class="legend"><span><i style="background:var(--good)"></i>Done</span><span><i style="background:var(--accent)"></i>In progress</span><span><i style="background:color-mix(in srgb,var(--fg) 20%,transparent)"></i>Next</span></div>' +
@@ -187,14 +188,14 @@
       sec("Latest update", "", '<div class="callout glass ' + rv() + '"><div class="big">' + fmtDate(S.latest.date) + "</div><p>" + esc(S.latest.text) + "</p></div>" +
         (nb ? '<div class="callout glass ' + rv() + '" style="margin-top:12px"><div class="big">Notebook · ' + fmtDate(nb.date) + "</div><p>" + esc(nb.objective) + "</p></div>" : "")) +
       sec("The portfolio", "Fifteen pages, in the order the project happened. Pages 2 to 10 follow the sixteen-step design chain.", '<div class="grid g4">' + cards + "</div>") +
-      sec("The team", "", teamCards(false) + '<h3 style="margin:34px 0 14px" class="reveal">Faculty guides</h3>' + facultyCards());
+      sec("The team", "", teamCards() + '<h3 style="margin:34px 0 14px" class="reveal">Faculty guides</h3>' + facultyCards());
   };
 
   function initials(n) { return n.split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join("").toUpperCase(); }
-  function teamCards(showSub) {
+  function teamCards() {
     return '<div class="grid g4">' + S.members.map(function (m) {
-      return '<div class="person glass spot lift ' + rv() + '"><div class="avatar">' + initials(m.name) + "</div><h3>" + esc(m.name) + '</h3><div class="usn">' + esc(m.usn) + '</div><div class="mail"><a href="mailto:' + esc(m.email) + '">' + esc(m.email) + "</a></div>" +
-        (showSub ? '<div class="sub">Subsystem · <b>' + esc(m.subsystem) + "</b></div>" : "") + "</div>";
+      var pic = m.photo ? '<img loading="lazy" src="' + esc(m.photo) + '" alt="' + esc(m.name) + '">' : "<span>" + esc(initials(m.name)) + "</span>";
+      return '<div class="person glass spot lift ' + rv() + '"><div class="photo' + (m.photo ? "" : " empty") + '">' + pic + "</div><h3>" + esc(m.name) + '</h3><div class="usn">' + esc(m.usn) + '</div><div class="mail"><a href="mailto:' + esc(m.email) + '">' + esc(m.email) + "</a></div></div>";
     }).join("") + "</div>";
   }
   function facultyCards() {
@@ -204,7 +205,7 @@
   }
 
   views.team = function () {
-    return sec("Members", "Each member owns a subsystem and writes their own reflection after every review.", teamCards(true)) +
+    return sec("Members", "Each member writes their own reflection after every review.", teamCards()) +
       sec("Faculty guides", "", facultyCards());
   };
 

@@ -9,7 +9,6 @@ window.SITE = {
   subtitle: "Semester V Foundation Integration Mini Project · Academic Year 2026–27",
   dept: "Department of Electronics Engineering – VLSI Design and Technology",
   school: "School of Electrical and Electronics Engineering · KLE Technological University, Hubballi",
-  slug: "vdt-mp-2026-T1A1-team02",
   theme: "Theme 1", artefact: "Artefact 1", teamNo: "02",
 
   /* Team photo: drop a file at assets/img/team.jpg and set this to "assets/img/team.jpg" */
@@ -26,6 +25,11 @@ window.SITE = {
     { name: "Pooja Goudar",       dept: "Department of VLSI" },
     { name: "Vaishnavi Chandavari", dept: "Department of VLSI" },
     { name: "Asmita Aiholi",      dept: "Department of VLSI" }
+  ],
+
+  /* Contribution table — updated each review */
+  contributions: [
+    // { review: "Review 1", member: "Swaroop T", work: "Background study of ..." }
   ],
 
   /* Latest update shown on Home */
