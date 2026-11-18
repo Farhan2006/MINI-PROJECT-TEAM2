@@ -178,9 +178,10 @@
       '<div class="eyebrow reveal">' + esc(S.theme) + " · " + esc(S.artefact) + " · Team " + esc(S.teamNo) + "</div>" +
       '<h1 class="reveal" style="--d:1">' + titleHTML(S.title, true) + "</h1>" +
       '<p class="lede reveal" style="--d:2">' + esc(S.subtitle) + "</p>" +
-      '<div class="chips reveal" style="--d:3"><span class="chip"><b>EE-VDT</b> · KLE Technological University, Hubballi</span><span class="chip">' + esc(S.slug) + "</span></div>" +
+      '<div class="chips reveal" style="--d:3"><span class="chip"><b>EE-VDT</b> · KLE Technological University, Hubballi</span>' + (S.slug ? '<span class="chip">' + esc(S.slug) + "</span>" : "") + "</div>" +
       '<div class="hero-cta reveal" style="--d:4"><a class="btn primary" href="problem.html">Start with the problem</a><a class="btn ghost" href="notebook.html">Read the notebook</a></div>' +
       teamPhotoBlock + "</section>" +
+      sec("Inside the <em>chip</em>", "Scroll to pull the FPGA apart, layer by layer.", anatomyHTML()) +
       sec("Progress", done + " of 16 design steps complete.",
         '<div class="glass pad ' + rv() + '"><div class="strip">' + strip + '</div><div class="strip-labels">' + labels + "</div>" +
         '<div class="legend"><span><i style="background:var(--good)"></i>Done</span><span><i style="background:var(--accent)"></i>In progress</span><span><i style="background:color-mix(in srgb,var(--fg) 20%,transparent)"></i>Next</span></div>' +
@@ -191,6 +192,25 @@
       sec("The team", "", teamCards() + '<h3 style="margin:34px 0 14px" class="reveal">Faculty guides</h3>' + facultyCards());
   };
 
+  /* scroll-driven exploded view of the FPGA (animated by motion.js) */
+  function anatomyHTML() {
+    var steps = [
+      ["Board", "The traces carry the signal in and the amplified result out."],
+      ["Pins", "Every connection to the outside world passes through the package pins."],
+      ["Die", "The logic that selects the gain lives here."],
+      ["Package", "Sealed and labelled: the FPGA at the heart of the design."]
+    ];
+    var li = steps.map(function (s, i) { return '<li class="' + (i === 0 ? "on" : "") + '"><b><em>0' + (i + 1) + "</em>" + s[0] + "</b><p>" + s[1] + "</p></li>"; }).join("");
+    return '<div class="anat" data-a="0"><div class="anat-track"><div class="anat-sticky">' +
+      '<div class="anat-stage" aria-hidden="true"><div class="chip3d"><div class="idle">' +
+      '<div class="layer l-board" style="--k:0"></div>' +
+      '<div class="layer l-pins" style="--k:1"><i></i><i></i><i></i><i></i></div>' +
+      '<div class="layer l-die" style="--k:2"></div>' +
+      '<div class="layer l-lid" style="--k:3"><span>FPGA</span><small>Variable gain</small></div>' +
+      '</div></div></div>' +
+      '<div><ol class="anat-steps">' + li + '</ol><div class="anat-bar" aria-hidden="true"><i></i></div></div>' +
+      "</div></div></div>";
+  }
   function initials(n) { return n.split(/\s+/).map(function (w) { return w[0]; }).slice(0, 2).join("").toUpperCase(); }
   function teamCards() {
     return '<div class="grid g4">' + S.members.map(function (m) {
@@ -451,7 +471,7 @@
     var main = document.getElementById("content");
     main.innerHTML = pageHead(p) + (views[id] ? views[id]() : "") + pager(p);
     document.body.insertAdjacentHTML("beforeend",
-      "<footer><span>EE-VDT · " + esc(S.dept) + "<br>" + esc(S.school) + "</span><span>" + esc(S.slug) + "</span></footer>");
+      "<footer><span>EE-VDT · " + esc(S.dept) + "<br>" + esc(S.school) + "</span>" + (S.slug ? '<span class="foot-slug">' + esc(S.slug) + "</span>" : "") + "</footer>");
 
     /* menu */
     var btn = document.getElementById("menuBtn");
