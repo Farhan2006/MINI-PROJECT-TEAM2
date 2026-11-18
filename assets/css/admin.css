@@ -1,0 +1,62 @@
+/* Admin editor — reuses the portfolio theme variables */
+body.admin { padding: 0; }
+.ad-top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 22px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-bottom: 1px solid var(--stroke); }
+.ad-brand { font-family: var(--display); font-weight: 900; font-size: 24px; text-transform: uppercase; line-height: 1; margin-right: auto; }
+.ad-brand em { font-family: var(--serif); font-weight: 400; text-transform: none; color: var(--accent); font-size: 1.05em; }
+.ad-state { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.ad-state.dirty { color: var(--accent); }
+.ad-btn { font: 600 13px var(--sans); padding: 9px 16px; border-radius: 980px; border: 1px solid var(--stroke-strong); background: transparent; color: var(--fg); cursor: pointer; transition: background .2s, color .2s; text-decoration: none; display: inline-block; }
+.ad-btn:hover { background: var(--fg); color: var(--bg); }
+.ad-btn.pri { background: var(--fg); color: var(--bg); }
+.ad-btn.pri:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ad-btn.danger:hover { background: var(--warn); border-color: var(--warn); color: #fff; }
+.ad-btn.sm { padding: 5px 11px; font-size: 12px; }
+
+.ad-wrap { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; max-width: 1280px; margin: 0 auto; padding: 24px 22px 90px; }
+.ad-side { position: sticky; top: 74px; align-self: start; max-height: calc(100vh - 90px); overflow: auto; padding-right: 4px; }
+.ad-side h4 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 16px 0 6px; font-weight: 600; }
+.ad-side a { display: flex; gap: 10px; align-items: baseline; padding: 7px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--fg); }
+.ad-side a em { font-style: normal; font-size: 11px; color: var(--faint); min-width: 18px; }
+.ad-side a:hover { background: color-mix(in srgb, var(--fg) 7%, transparent); }
+.ad-side a.on { background: var(--fg); color: var(--bg); }
+.ad-side a.on em { color: var(--accent); }
+
+.ad-main h1 { font-size: clamp(44px, 6vw, 84px); margin-bottom: 8px; }
+.ad-main .ad-sub { color: var(--muted); max-width: 640px; margin-bottom: 26px; }
+.ad-block { margin-bottom: 22px; padding: 22px; }
+.ad-block > h3 { font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: 28px; line-height: 1; margin-bottom: 4px; }
+.ad-block > p.hint { color: var(--muted); font-size: 13.5px; margin-bottom: 16px; }
+.ad-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+.ad-f { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ad-f.full { grid-column: 1 / -1; }
+.ad-f label { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.ad-f input[type=text], .ad-f input[type=number], .ad-f input[type=date], .ad-f select, .ad-f textarea, .ad-gh input {
+  font: 400 14.5px var(--sans); color: var(--fg); background: color-mix(in srgb, var(--bg) 55%, transparent); border: 1px solid var(--stroke-strong); border-radius: 10px; padding: 9px 12px; width: 100%; transition: border-color .2s, box-shadow .2s; }
+.ad-f textarea { min-height: 76px; resize: vertical; line-height: 1.4; }
+.ad-f input:focus, .ad-f select:focus, .ad-f textarea:focus, .ad-gh input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.ad-f .chk { display: flex; align-items: center; gap: 8px; font-size: 14px; padding-top: 8px; cursor: pointer; }
+.ad-f .chk input { width: 18px; height: 18px; accent-color: var(--accent); }
+.ad-row { border: 1px solid var(--stroke); border-radius: 12px; padding: 16px; margin-bottom: 12px; background: color-mix(in srgb, var(--bg) 35%, transparent); }
+.ad-row-h { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+.ad-row-h b { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-right: auto; }
+.ad-empty { color: var(--faint); font-size: 14px; padding: 10px 0 16px; }
+.ad-nested { grid-column: 1 / -1; border-left: 2px solid var(--stroke-strong); padding-left: 14px; }
+.ad-nested > label { display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.ad-scores { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ad-gh { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 14px 0; }
+.ad-gh label { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--faint); font-weight: 600; display: block; margin-bottom: 5px; }
+.ad-log { font-size: 13.5px; margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: color-mix(in srgb, var(--fg) 6%, transparent); white-space: pre-wrap; word-break: break-word; display: none; }
+.ad-log.show { display: block; }
+.ad-log.ok { background: color-mix(in srgb, var(--accent-2) 18%, transparent); }
+.ad-log.err { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+.ad-json { width: 100%; min-height: 60vh; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; padding: 14px; border-radius: 12px; border: 1px solid var(--stroke-strong); background: color-mix(in srgb, var(--bg) 55%, transparent); color: var(--fg); }
+.ad-note { padding: 14px 18px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 0 10px 10px 0; font-size: 13.5px; margin-bottom: 24px; max-width: 760px; }
+.ad-toast { position: fixed; bottom: 18px; right: 18px; z-index: 80; background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 980px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s; pointer-events: none; }
+.ad-toast.show { opacity: 1; transform: none; }
+@media (max-width: 860px) {
+  .ad-wrap { grid-template-columns: 1fr; }
+  .ad-side { position: static; max-height: none; display: flex; flex-wrap: wrap; gap: 4px; }
+  .ad-side h4 { width: 100%; margin: 8px 0 2px; }
+  .ad-fields { grid-template-columns: 1fr; }
+}

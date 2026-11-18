@@ -1,7 +1,18 @@
 /* EE-VDT portfolio renderer — builds every page from window.SITE (assets/js/data.js) */
 (function () {
   "use strict";
+  /* Admin working copy (set from admin.html in THIS browser only) overrides data.js for preview. */
+  try {
+    var ov = localStorage.getItem("vdt_site_override");
+    if (ov && !/[?&]nooverride/.test(location.search)) { var parsed = JSON.parse(ov); if (parsed && typeof parsed === "object") window.SITE = Object.assign({}, window.SITE, parsed); }
+  } catch (e) {}
   var S = window.SITE;
+  /* Headline: stacked uppercase display type with one serif-italic word and a blinking underscore. */
+  function titleHTML(text, hero) {
+    var w = String(text == null ? "" : text).trim().split(/\s+/), k = w.length - 1;
+    if (hero) { var g = w.findIndex(function (x) { return /gain/i.test(x); }); if (g > -1) k = g; }
+    return w.map(function (x, i) { x = esc(x); return i === k && w.length > 1 ? "<em>" + x + "</em>" : x; }).join(" ") + '<span class="caret" aria-hidden="true">_</span>';
+  }
   var esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -15,7 +26,7 @@
   /* ---------------- page map (from the Guide's site structure) ---------------- */
   var PAGES = [
     { id: "home", file: "index.html", num: 0, short: "Home", title: "Home", group: "Overview", steps: "—", due: "Review 1", holds: "" },
-    { id: "team", file: "team.html", num: 1, short: "Team", title: "Team and Roles", group: "Overview", steps: "—", due: "Review 1", holds: "Members, the subsystem each owns, contact details, and a contribution table updated each review." },
+    { id: "team", file: "team.html", num: 1, short: "Team", title: "Team and Roles", group: "Overview", steps: "—", due: "Review 1", holds: "Members, the subsystem each owns, and contact details." },
     { id: "problem", file: "problem.html", num: 2, short: "Problem", title: "Problem and Need", group: "Design chain", steps: "01", due: "Review 1", holds: "The need in terms of what is required, quantified design inputs, background study, and three candidate functional requirements." },
     { id: "concepts", file: "concepts.html", num: 3, short: "Concepts", title: "Concept Choices", group: "Design chain", steps: "02", due: "Review 2", holds: "At least three alternatives with sketches, a weighted comparison, the chosen concept and why, and what is in and out of scope." },
     { id: "requirements", file: "requirements.html", num: 4, short: "Requirements", title: "Functional Requirements", group: "Design chain", steps: "03", due: "Review 3", holds: "The live FR table with number, method, source and status, plus the change history of any FR after freeze." },
@@ -164,7 +175,7 @@
     var nb = (S.notebook && S.notebook[0]) || null;
     return '<section class="hero">' +
       '<div class="eyebrow reveal">' + esc(S.theme) + " · " + esc(S.artefact) + " · Team " + esc(S.teamNo) + "</div>" +
-      '<h1 class="reveal" style="--d:1"><span class="grad">' + esc(S.title) + "</span></h1>" +
+      '<h1 class="reveal" style="--d:1">' + titleHTML(S.title, true) + "</h1>" +
       '<p class="lede reveal" style="--d:2">' + esc(S.subtitle) + "</p>" +
       '<div class="chips reveal" style="--d:3"><span class="chip"><b>EE-VDT</b> · KLE Technological University, Hubballi</span><span class="chip">' + esc(S.slug) + "</span></div>" +
       '<div class="hero-cta reveal" style="--d:4"><a class="btn primary" href="problem.html">Start with the problem</a><a class="btn ghost" href="notebook.html">Read the notebook</a></div>' +
@@ -193,11 +204,8 @@
   }
 
   views.team = function () {
-    var rows = (S.contributions || []).map(function (c) { return R([esc(c.review), esc(c.member), esc(c.work)]); });
     return sec("Members", "Each member owns a subsystem and writes their own reflection after every review.", teamCards(true)) +
-      sec("Faculty guides", "", facultyCards()) +
-      sec("Contribution table", "Updated each review by the portfolio lead (the role rotates each review).",
-        rows.length ? table(["Review", "Member", "Contribution"], rows) : empty("No contributions recorded yet", "Add rows to <code>contributions</code> in data.js after each review."));
+      sec("Faculty guides", "", facultyCards());
   };
 
   views.problem = function () {
@@ -418,7 +426,7 @@
     if (p.id === "home") return "";
     var upd = (S.pageUpdated && S.pageUpdated[p.id]) || S.defaultUpdated;
     return '<header class="page-head"><div class="eyebrow reveal">Page ' + p.num + (p.steps !== "—" && p.steps !== "all" ? " · Design step " + p.steps : p.steps === "all" ? " · All steps" : "") + "</div>" +
-      '<h1 class="reveal" style="--d:1"><span class="grad">' + esc(p.title) + "</span></h1>" +
+      '<h1 class="reveal" style="--d:1">' + titleHTML(p.title, false) + "</h1>" +
       '<p class="lede reveal" style="--d:2">' + esc(p.holds) + "</p>" +
       '<div class="chips reveal" style="--d:3"><span class="chip">First due <b>' + esc(p.due) + '</b></span><span class="chip">Updated <b>' + fmtDate(upd) + "</b></span></div></header>";
   }
@@ -438,7 +446,7 @@
     if (saved) document.documentElement.setAttribute("data-theme", saved);
 
     document.body.insertAdjacentHTML("afterbegin",
-      '<div class="ambient"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>' + navHTML(id));
+      '<div class="ambient"></div>' + navHTML(id));
     var main = document.getElementById("content");
     main.innerHTML = pageHead(p) + (views[id] ? views[id]() : "") + pager(p);
     document.body.insertAdjacentHTML("beforeend",
@@ -479,14 +487,6 @@
     function onScroll() { nav.style.height = window.scrollY > 24 ? "46px" : "52px"; }
     window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
 
-    /* spotlight */
-    document.addEventListener("pointermove", function (e) {
-      var t = e.target.closest && e.target.closest(".spot");
-      if (!t) return;
-      var r = t.getBoundingClientRect();
-      t.style.setProperty("--mx", (e.clientX - r.left) + "px"); t.style.setProperty("--my", (e.clientY - r.top) + "px");
-    }, { passive: true });
-
     /* reveal on scroll */
     var items = document.querySelectorAll(".reveal, .strip");
     if ("IntersectionObserver" in window) {
@@ -508,30 +508,18 @@
       document.querySelectorAll("[data-w]").forEach(function (b) { b.style.width = b.getAttribute("data-w") + "%"; });
     }
 
-    /* gentle hero parallax */
-    var hero = document.querySelector(".hero");
-    if (hero && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      var ticking = false;
-      window.addEventListener("scroll", function () {
-        if (ticking) return; ticking = true;
-        requestAnimationFrame(function () {
-          var y = Math.min(window.scrollY, 600);
-          /* parallax + fade only the headline block, never the 3D stage / demo panels */
-          var o = String(Math.max(0, 1 - y / 500));
-          hero.querySelectorAll(".eyebrow, h1, .lede, .chips, .hero-cta").forEach(function (el) { el.style.translate = "0 " + (y * 0.12) + "px"; el.style.opacity = o; });
-          ticking = false;
-        });
-      }, { passive: true });
-    }
+    /* hidden admin entry: Ctrl+Shift+A, or triple-click the footer */
+    document.addEventListener("keydown", function (e) { if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) { e.preventDefault(); location.href = "admin.html"; } });
+    var ft = document.querySelector("footer");
+    if (ft) ft.addEventListener("click", function (e) { if (e.detail === 3) location.href = "admin.html"; });
+
+    /* a small "preview" ribbon when this browser is showing unpublished admin edits */
+    try {
+      if (localStorage.getItem("vdt_site_override") && !/[?&]nooverride/.test(location.search)) {
+        var rb = document.createElement("a"); rb.className = "ribbon"; rb.href = "admin.html"; rb.textContent = "Previewing unpublished edits · open admin";
+        document.body.appendChild(rb);
+      }
+    } catch (e) {}
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
-
-  /* motion layer (optional enhancement: site works without it) */
-  (function () {
-    var f = document.createElement("link"); f.rel = "stylesheet";
-    f.href = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap";
-    document.head.appendChild(f);
-    var l = document.createElement("link"); l.rel = "stylesheet"; l.href = "assets/css/fx.css"; document.head.appendChild(l);
-    var s = document.createElement("script"); s.src = "assets/js/fx.js"; s.defer = true; document.head.appendChild(s);
-  })();
 })();

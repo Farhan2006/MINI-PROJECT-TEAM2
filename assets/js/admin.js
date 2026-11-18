@@ -1,0 +1,341 @@
+/* Hidden admin editor for the portfolio.
+   - Works on a copy of window.SITE (data.js) merged with this browser's saved working copy.
+   - Autosaves to localStorage ("vdt_site_override"): the site shows those edits in THIS browser as a preview.
+   - Publishing = writing assets/js/data.js to GitHub (token pasted by the admin), or downloading data.js. */
+(function () {
+  "use strict";
+  var KEY = "vdt_site_override";
+  var ORIGINAL = JSON.parse(JSON.stringify(window.SITE));
+  var data;
+  try { var saved = localStorage.getItem(KEY); data = saved ? Object.assign({}, ORIGINAL, JSON.parse(saved)) : JSON.parse(JSON.stringify(ORIGINAL)); }
+  catch (e) { data = JSON.parse(JSON.stringify(ORIGINAL)); }
+  delete data.contributions; /* removed from the site */
+
+  /* ---------- helpers ---------- */
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === "class") el.className = attrs[k];
+      else if (k === "text") el.textContent = attrs[k];
+      else if (k.slice(0, 2) === "on") el.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== false && attrs[k] != null) el.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return el;
+  }
+  function getPath(o, p) { if (!p) return o; return p.split(".").reduce(function (a, k) { return a == null ? a : a[k]; }, o); }
+  function setPath(o, p, v) { var ks = p.split("."), last = ks.pop(), t = o; ks.forEach(function (k) { if (t[k] == null || typeof t[k] !== "object") t[k] = {}; t = t[k]; }); t[last] = v; }
+  function ensureArr(path) { var a = getPath(data, path); if (!Array.isArray(a)) { a = []; setPath(data, path, a); } return a; }
+  var toastEl, toastT;
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove("show"); }, 1800); }
+
+  var stateEl, saveT;
+  function dirty() { return JSON.stringify(strip(data)) !== JSON.stringify(strip(ORIGINAL)); }
+  function strip(o) { var c = Object.assign({}, o); delete c.contributions; return c; }
+  function refreshState() { var d = dirty(); stateEl.textContent = d ? "Unpublished changes" : "Matches published data.js"; stateEl.className = "ad-state" + (d ? " dirty" : ""); }
+  function changed() {
+    clearTimeout(saveT);
+    saveT = setTimeout(function () { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { toast("Could not save locally (storage blocked)"); } refreshState(); }, 250);
+    refreshState();
+  }
+
+  /* ---------- schema ---------- */
+  function T(k, l, o) { return Object.assign({ k: k, l: l, t: "text" }, o || {}); }
+  function A(k, l, o) { return T(k, l, Object.assign({ t: "area", full: true }, o || {})); }
+  function N(k, l, o) { return T(k, l, Object.assign({ t: "num" }, o || {})); }
+  function D(k, l, o) { return T(k, l, Object.assign({ t: "date" }, o || {})); }
+  function S(k, l, opts, o) { return T(k, l, Object.assign({ t: "sel", o: opts }, o || {})); }
+  var PAGE_IDS = ["problem", "concepts", "requirements", "architecture", "design", "build", "validation", "failures"];
+  var MEDIA = [S("type", "Type", ["image", "video", "embed"]), T("src", "File or URL (e.g. assets/img/x.png)"), T("caption", "Caption", { full: true })];
+
+  var SECTIONS = [
+    { g: "Overview", id: "general", n: "0", title: "Home and general", sub: "Title, subtitle, dates and the 16-step progress strip shown on the Home page.", blocks: [
+      { f: [T("title", "Project title", { full: true }), T("subtitle", "Subtitle", { full: true }), T("dept", "Department", { full: true }), T("school", "School / university", { full: true }), T("slug", "Project slug"), T("theme", "Theme"), T("artefact", "Artefact"), T("teamNo", "Team number"), T("teamPhoto", "Team photo path (assets/img/team.jpg)", { full: true })] },
+      { path: "latest", label: "Latest update (Home)", f: [D("date", "Date"), A("text", "Text")] },
+      { f: [D("defaultUpdated", "Default 'last updated' date for pages")], label: "Page dates" },
+      { path: "steps", label: "Design steps", hint: "Status drives the progress strip: done, progress or next.", rows: [N("n", "Step number"), T("label", "Label"), S("status", "Status", ["done", "progress", "next"])], title: "label", noReorder: false }
+    ] },
+    { g: "Overview", id: "team", n: "1", title: "Team and roles", sub: "Members, the subsystem each owns, and faculty guides.", blocks: [
+      { path: "members", label: "Members", rows: [T("name", "Name"), T("usn", "USN"), T("email", "Email", { full: true }), T("subsystem", "Subsystem owned", { full: true })], title: "name" },
+      { path: "faculty", label: "Faculty guides", rows: [T("name", "Name"), T("dept", "Department")], title: "name" }
+    ] },
+    { g: "Design chain", id: "problem", n: "2", title: "Problem and need", sub: "Need statement, design inputs, background study and candidate requirements.", blocks: [
+      { path: "problem", label: "Need statement", f: [A("need", "What is required, in measurable terms, without naming a circuit")] },
+      { path: "problem.inputs", label: "Design inputs", rows: [T("parameter", "Parameter"), T("value", "Value"), T("unit", "Unit"), S("source", "Source", ["measured", "datasheet", "assumed"]), T("note", "Note", { full: true })], title: "parameter" },
+      { path: "problem.background", label: "Background study", rows: [T("title", "Source name"), S("type", "Type", ["datasheet", "app note", "reference design"]), A("learned", "What we learned"), T("link", "Link", { full: true })], title: "title" },
+      { path: "problem.candidateFRs", label: "Candidate functional requirements", rows: [T("id", "ID (e.g. FR-A)"), T("text", "Requirement", { full: true })], title: "id" },
+      { path: "problem.unknowns", label: "Still unknown", strings: true, hint: "One item per line." }
+    ] },
+    { g: "Design chain", id: "concepts", n: "3", title: "Concept choices", sub: "Criteria, alternatives, scoring and the chosen concept.", blocks: [
+      { path: "concepts.criteria", label: "Decision criteria", rows: [T("name", "Criterion"), N("weight", "Weight")], title: "name" },
+      { path: "concepts.alternatives", label: "Alternatives", rows: [T("name", "Concept name"), T("sketch", "Sketch image path"), A("summary", "Summary"), A("rejectedBecause", "Set aside because"), { k: "scores", l: "Scores per criterion", t: "scores" }], title: "name" },
+      { path: "concepts", label: "Choice", f: [T("chosen", "Chosen concept", { full: true }), A("reason", "Reason")] },
+      { path: "concepts.scopeIn", label: "In scope", strings: true, hint: "One item per line." },
+      { path: "concepts.scopeOut", label: "Out of scope", strings: true, hint: "One item per line." }
+    ] },
+    { g: "Design chain", id: "requirements", n: "4", title: "Functional requirements", sub: "The FR table with prediction vs measurement, and its change history.", blocks: [
+      { f: [D("frFrozen", "Date the FR table was frozen")], label: "Freeze" },
+      { path: "fr", label: "Requirements", rows: [T("id", "ID"), T("requirement", "Requirement", { full: true }), T("target", "Target"), T("method", "Method"), S("source", "Source", ["measured", "datasheet", "assumed"]), S("status", "Status", ["draft", "frozen", "changed"]), T("predicted", "Predicted"), T("measured", "Measured"), T("deviation", "Deviation"), A("explanation", "Explanation")], title: "id" },
+      { path: "frHistory", top: true, label: "Change history", rows: [D("date", "Date"), T("fr", "FR"), T("change", "Change", { full: true }), A("reason", "Reason")], title: "fr" }
+    ] },
+    { g: "Design chain", id: "architecture", n: "5", title: "Architecture and subsystems", sub: "Block diagram, blocks and subsystem choices.", blocks: [
+      { path: "architecture", label: "Diagram", f: [T("diagram", "Block diagram image path", { full: true })] },
+      { path: "architecture.blocks", label: "Blocks", rows: [T("name", "Block"), T("fr", "FR it serves"), T("input", "Input"), T("output", "Output")], title: "name" },
+      { path: "architecture.subsystemChoices", label: "Subsystem choices", rows: [T("subsystem", "Subsystem"), { k: "options", l: "Options considered (comma-separated)", t: "csv", full: true }, T("chosen", "Chosen"), A("reason", "Reason")], title: "subsystem" }
+    ] },
+    { g: "Design chain", id: "design", n: "6", title: "Design and calculations", sub: "Calculations, components, schematic media and bill of materials.", blocks: [
+      { path: "design.calcs", top: true, label: "Calculations", rows: [T("title", "Title", { full: true }), T("fr", "FR"), D("date", "Date"), T("equation", "Equation", { full: true }), T("values", "Values", { full: true }), T("result", "Result"), T("margin", "Margin")], title: "title" },
+      { path: "design.components", label: "Component selection", rows: [T("part", "Part"), T("role", "Role"), A("reason", "Why this part"), T("alternatives", "Alternatives"), D("date", "Date")], title: "part" },
+      { path: "design.media", label: "Schematics and images", rows: MEDIA, title: "caption" },
+      { path: "design.bom", label: "Bill of materials", rows: [T("part", "Part"), T("value", "Value"), N("qty", "Qty"), T("source", "Source"), T("cost", "Cost")], title: "part" }
+    ] },
+    { g: "Design chain", id: "integration", n: "7", title: "Foundation integration", sub: "Courses, decision cards and the integration map.", blocks: [
+      { path: "courses", label: "The nine foundation courses", strings: true, hint: "One course per line." },
+      { f: [A("coverageNote", "Coverage note (explain any under-represented course)")], label: "Coverage" },
+      { path: "decisions", top: true, label: "Decision cards", rows: [T("id", "ID (D1…)"), S("page", "Made on page", PAGE_IDS), D("date", "Date"), T("decision", "Decision", { full: true }),
+        { k: "options", l: "Options considered", t: "rows", cols: [T("name", "Option"), T("reason", "Reason", { full: true })] },
+        T("fr", "Functional requirement addressed", { full: true }),
+        { k: "courses", l: "Courses and concepts used", t: "rows", cols: [T("course", "Course"), T("concept", "Concept", { full: true })] },
+        A("how", "How it was applied"), A("meets", "Where theory meets reality"), T("predicted", "Predicted"), D("predictedDate", "Predicted on"), T("measured", "Measured"), T("instrument", "Instrument"), A("learning", "Learning")], title: "id" },
+      { path: "map", label: "Foundation Integration Map (Appendix D)", rows: [T("step", "Step"), T("decision", "Decision ID"), T("course", "Course"), T("concept", "Concept"), S("level", "Level", ["Named", "Applied", "Verified"])], title: "decision" }
+    ] },
+    { g: "Design chain", id: "build", n: "8", title: "Build and verification", sub: "Simulations, subsystem tests, build media and deviations.", blocks: [
+      { path: "build.sims", label: "Simulations", rows: [T("title", "Title", { full: true }), T("tool", "Tool"), T("src", "Image path"), A("result", "Result"), T("caption", "Caption", { full: true })], title: "title" },
+      { path: "build.tests", top: true, label: "Subsystem tests", rows: [T("subsystem", "Subsystem"), D("date", "Date"), T("test", "Test", { full: true }), T("result", "Result", { full: true }), { k: "pass", l: "Passed", t: "bool" }], title: "subsystem" },
+      { path: "build.media", label: "Build media", rows: MEDIA, title: "caption" },
+      { path: "build.deviations", top: true, label: "Deviations", rows: [D("date", "Date"), T("what", "What changed", { full: true }), A("reason", "Why")], title: "what" }
+    ] },
+    { g: "Design chain", id: "validation", n: "9", title: "Predicted vs measured", sub: "Instruments, evidence and the improvement that was re-measured.", blocks: [
+      { path: "validation.instruments", label: "Instruments", rows: [T("instrument", "Instrument"), T("settings", "Settings", { full: true })], title: "instrument" },
+      { path: "validation.media", label: "Evidence media", rows: MEDIA, title: "caption" },
+      { path: "validation", label: "Improvement", f: [A("improvement", "The one improvement that was re-measured")] }
+    ] },
+    { g: "Design chain", id: "failures", n: "10", title: "Failures and fixes", sub: "Failure cycles: symptom, root cause, correction and learning.", blocks: [
+      { f: [N("failuresRequired", "Failure cycles required by the final review")], label: "Target" },
+      { path: "failures", top: true, label: "Failure cycles", rows: [D("date", "Date"), T("course", "Course"), T("symptom", "Symptom", { full: true }), T("test", "How it was found", { full: true }), A("rootCause", "Root cause"), A("correction", "Correction"), T("remeasured", "Re-measured result", { full: true }), A("learning", "Learning")], title: "symptom" }
+    ] },
+    { g: "Evidence", id: "notebook", n: "11", title: "Engineering notebook", sub: "Dated entries, newest first.", blocks: [
+      { path: "notebook", top: true, label: "Entries", rows: [D("date", "Date"), T("author", "Author"), T("objective", "Objective", { full: true }), A("decision", "Decision or calculation"), T("course", "Course used"), A("learning", "Learning"), A("next", "Next action")], title: "objective" }
+    ] },
+    { g: "Evidence", id: "reviews", n: "12", title: "Review record", sub: "Review dates and verbatim faculty observations with the team's response.", blocks: [
+      { path: "reviewDates", label: "Review dates", f: [D("r1", "Review 1"), D("r2", "Review 2"), D("r3", "Review 3"), D("r4", "Review 4"), D("r5", "Review 5"), D("final", "Final review")] },
+      { path: "reviewRecord", top: true, label: "Observations and responses", rows: [T("review", "Review"), D("date", "Date"), A("observation", "Faculty observation (verbatim)"), A("response", "What changed"), T("where", "Where it changed (e.g. Page 4, FR2)"), T("href", "Page link (e.g. requirements.html)")], title: "review" }
+    ] },
+    { g: "Evidence", id: "reflections", n: "13", title: "Reflections", sub: "Individual reflections and lessons.", blocks: [
+      { path: "reflections", top: true, label: "Reflections", rows: [T("member", "Member"), T("review", "Review"), D("date", "Date"), A("text", "Reflection")], title: "member" },
+      { path: "lessons.minor", label: "Lessons: minor", strings: true, hint: "One per line." },
+      { path: "lessons.cohort", label: "Lessons: for the cohort", strings: true, hint: "One per line." },
+      { path: "lessons.carry", label: "Lessons: to carry forward", strings: true, hint: "One per line." }
+    ] },
+    { g: "Closing", id: "demo", n: "14", title: "Final demonstration", sub: "Demo video and summary poster.", blocks: [
+      { path: "demo", label: "Demo", f: [T("video", "Video (mp4 path, or YouTube/Drive embed URL)", { full: true }), T("poster", "Summary poster image path", { full: true })] }
+    ] },
+    { g: "Closing", id: "files", n: "15", title: "Project files", sub: "Links to the report, repositories, schematics and simulations.", blocks: [
+      { path: "files", label: "Files", rows: [T("label", "Label", { full: true }), T("href", "Link", { full: true }), T("note", "Note")], title: "label" }
+    ] },
+    { g: "Tools", id: "publish", n: "↑", title: "Publish and backup", sub: "Send your edits live, or export and import them.", special: "publish" },
+    { g: "Tools", id: "json", n: "{ }", title: "Advanced (raw JSON)", sub: "Edit everything directly. Invalid JSON is rejected.", special: "json" }
+  ];
+
+  /* ---------- field renderers ---------- */
+  function defFor(cols) {
+    var o = {};
+    cols.forEach(function (c) { o[c.k] = c.t === "num" ? 0 : c.t === "bool" ? false : c.t === "sel" ? c.o[0] : c.t === "rows" || c.t === "csv" ? [] : c.t === "scores" ? {} : ""; });
+    return o;
+  }
+  function fieldEl(c, obj, rerender) {
+    var wrap = h("div", { class: "ad-f" + (c.full ? " full" : "") });
+    var id = "f" + Math.random().toString(36).slice(2, 8);
+    if (c.t === "rows") {
+      wrap = h("div", { class: "ad-nested" }, [h("label", { text: c.l })]);
+      if (!Array.isArray(obj[c.k])) obj[c.k] = [];
+      wrap.appendChild(rowsEl(obj[c.k], c.cols, { title: c.cols[0].k, small: true }, rerender));
+      return wrap;
+    }
+    if (c.t === "scores") {
+      var crit = (getPath(data, "concepts.criteria") || []).map(function (x) { return x.name; }).filter(Boolean);
+      wrap = h("div", { class: "ad-nested" }, [h("label", { text: c.l })]);
+      if (!obj.scores || typeof obj.scores !== "object") obj.scores = {};
+      if (!crit.length) { wrap.appendChild(h("div", { class: "ad-empty", text: "Add decision criteria above first." })); return wrap; }
+      var grid = h("div", { class: "ad-scores" });
+      crit.forEach(function (name) {
+        var inp = h("input", { type: "number", min: 0, max: 5, step: 1, value: obj.scores[name] == null ? "" : obj.scores[name], oninput: function () { obj.scores[name] = inp.value === "" ? 0 : Number(inp.value); changed(); } });
+        grid.appendChild(h("div", { class: "ad-f" }, [h("label", { text: name }), inp]));
+      });
+      wrap.appendChild(grid); return wrap;
+    }
+    if (c.t === "bool") {
+      var cb = h("input", { type: "checkbox", onchange: function () { obj[c.k] = cb.checked; changed(); } }); cb.checked = !!obj[c.k];
+      wrap.appendChild(h("label", { text: c.l })); wrap.appendChild(h("label", { class: "chk" }, [cb, "Yes"])); return wrap;
+    }
+    wrap.appendChild(h("label", { for: id, text: c.l }));
+    var el, val = obj[c.k];
+    if (c.t === "area") {
+      el = h("textarea", { id: id, oninput: function () { obj[c.k] = el.value; changed(); } }); el.value = val == null ? "" : val;
+    } else if (c.t === "sel") {
+      el = h("select", { id: id, onchange: function () { obj[c.k] = el.value; changed(); } }, c.o.map(function (o) { return h("option", { value: o, text: o }); }));
+      if (val && c.o.indexOf(val) < 0) el.appendChild(h("option", { value: val, text: val }));
+      el.value = val == null || val === "" ? c.o[0] : val;
+      if (val == null || val === "") { obj[c.k] = el.value; }
+    } else if (c.t === "csv") {
+      el = h("input", { id: id, type: "text", oninput: function () { obj[c.k] = el.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean); changed(); } }); el.value = (val || []).join(", ");
+    } else if (c.t === "num") {
+      el = h("input", { id: id, type: "number", step: "any", oninput: function () { obj[c.k] = el.value === "" ? 0 : Number(el.value); changed(); } }); el.value = val == null ? "" : val;
+    } else if (c.t === "date") {
+      el = h("input", { id: id, type: "date", oninput: function () { obj[c.k] = el.value; changed(); } }); el.value = val || "";
+    } else {
+      el = h("input", { id: id, type: "text", oninput: function () { obj[c.k] = el.value; changed(); } }); el.value = val == null ? "" : val;
+    }
+    wrap.appendChild(el); return wrap;
+  }
+  function fieldsEl(obj, cols, rerender) {
+    var g = h("div", { class: "ad-fields" });
+    cols.forEach(function (c) { g.appendChild(fieldEl(c, obj, rerender)); });
+    return g;
+  }
+  function rowsEl(arr, cols, opt, rerender) {
+    var box = h("div");
+    function draw() {
+      box.innerHTML = "";
+      if (!arr.length) box.appendChild(h("div", { class: "ad-empty", text: "Nothing here yet." }));
+      arr.forEach(function (item, i) {
+        var tk = opt.title && item[opt.title] ? String(item[opt.title]).slice(0, 48) : "";
+        var head = h("div", { class: "ad-row-h" }, [
+          h("b", { text: "#" + (i + 1) + (tk ? " · " + tk : "") }),
+          h("button", { class: "ad-btn sm", type: "button", title: "Move up", text: "↑", onclick: function () { if (i > 0) { arr.splice(i - 1, 0, arr.splice(i, 1)[0]); changed(); draw(); } } }),
+          h("button", { class: "ad-btn sm", type: "button", title: "Move down", text: "↓", onclick: function () { if (i < arr.length - 1) { arr.splice(i + 1, 0, arr.splice(i, 1)[0]); changed(); draw(); } } }),
+          h("button", { class: "ad-btn sm danger", type: "button", text: "Delete", onclick: function () { if (confirm("Delete this item?")) { arr.splice(i, 1); changed(); draw(); } } })
+        ]);
+        box.appendChild(h("div", { class: "ad-row" }, [head, fieldsEl(item, cols, draw)]));
+      });
+      box.appendChild(h("button", { class: "ad-btn", type: "button", text: "+ Add" + (opt.top ? " (newest first)" : ""), onclick: function () { var it = defFor(cols); if (opt.top) arr.unshift(it); else arr.push(it); changed(); draw(); } }));
+    }
+    draw(); return box;
+  }
+  function stringsEl(path) {
+    var arr = ensureArr(path), ta = h("textarea", { style: "min-height:140px", oninput: function () { setPath(data, path, ta.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean)); changed(); } });
+    ta.value = arr.join("\n");
+    return h("div", { class: "ad-f full" }, [ta]);
+  }
+
+  /* ---------- views ---------- */
+  var app, main, curId = "general";
+  function block(b) {
+    var card = h("section", { class: "ad-block glass" }, [h("h3", { text: b.label || "" })]);
+    if (b.hint) card.appendChild(h("p", { class: "hint", text: b.hint }));
+    if (b.f) { var obj = b.path ? (getPath(data, b.path) || (setPath(data, b.path, {}), getPath(data, b.path))) : data; card.appendChild(fieldsEl(obj, b.f)); }
+    else if (b.rows) card.appendChild(rowsEl(ensureArr(b.path), b.rows, { title: b.title, top: b.top }));
+    else if (b.strings) card.appendChild(stringsEl(b.path));
+    return card;
+  }
+  function download(name, text, type) {
+    var a = h("a", { href: URL.createObjectURL(new Blob([text], { type: type || "text/plain" })), download: name }); document.body.appendChild(a); a.click(); a.remove();
+  }
+  function dataJs() {
+    var out = strip(data);
+    return "/* Portfolio data. Edited via admin.html. Dates: YYYY-MM-DD. Newest entries first. */\nwindow.SITE = " + JSON.stringify(out, null, 2) + ";\n";
+  }
+  function parseImport(text) {
+    var s = text.trim(), i = s.indexOf("{"), j = s.lastIndexOf("}");
+    if (i < 0 || j < i) throw new Error("No JSON object found");
+    return JSON.parse(s.slice(i, j + 1));
+  }
+  function utf8b64(s) { var b = new TextEncoder().encode(s), bin = ""; b.forEach(function (x) { bin += String.fromCharCode(x); }); return btoa(bin); }
+
+  function publishView() {
+    var wrap = h("div");
+    wrap.appendChild(h("div", { class: "ad-note", text: "Edits you make here autosave in this browser only, and the site shows them to you as a preview. Visitors see changes only after you publish. Publishing writes assets/js/data.js to GitHub, which needs a GitHub token that only you have, so nobody else can publish from this page." }));
+    var log = h("div", { class: "ad-log" });
+    function say(msg, cls) { log.className = "ad-log show " + (cls || ""); log.textContent = msg; }
+
+    var repo = h("input", { type: "text", value: localStorage.getItem("vdt_gh_repo") || "Swaroop087/MINI-PROJECT-TEAM2" });
+    var br = h("input", { type: "text", value: localStorage.getItem("vdt_gh_branch") || "main" });
+    var tok = h("input", { type: "password", placeholder: "github_pat_… (Contents: read & write)", autocomplete: "off", value: sessionStorage.getItem("vdt_gh_token") || "" });
+    var msg = h("input", { type: "text", value: "Update portfolio content via admin" });
+    var pub = h("section", { class: "ad-block glass" }, [h("h3", { text: "Publish to GitHub" }),
+      h("p", { class: "hint", text: "Create a fine-grained token at github.com → Settings → Developer settings, limited to this repository with Contents: Read and write. The token is kept for this tab only (never saved to disk or to the site)." }),
+      h("div", { class: "ad-gh" }, [h("div", null, [h("label", { text: "Repository (owner/name)" }), repo]), h("div", null, [h("label", { text: "Branch" }), br]), h("div", null, [h("label", { text: "Token" }), tok]), h("div", null, [h("label", { text: "Commit message" }), msg])]),
+      h("button", { class: "ad-btn pri", type: "button", text: "Publish data.js", onclick: function () {
+        var r = repo.value.trim(), b = br.value.trim() || "main", t = tok.value.trim();
+        if (!/^[\w.-]+\/[\w.-]+$/.test(r)) return say("Repository must look like owner/name", "err");
+        if (!t) return say("Paste a GitHub token first.", "err");
+        localStorage.setItem("vdt_gh_repo", r); localStorage.setItem("vdt_gh_branch", b); sessionStorage.setItem("vdt_gh_token", t);
+        var url = "https://api.github.com/repos/" + r + "/contents/assets/js/data.js", hd = { Authorization: "Bearer " + t, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
+        say("Reading current data.js…");
+        fetch(url + "?ref=" + encodeURIComponent(b), { headers: hd }).then(function (res) {
+          if (res.status === 404) return null;
+          if (!res.ok) throw new Error("GitHub said " + res.status + " while reading (check token, repo and branch).");
+          return res.json();
+        }).then(function (cur) {
+          say("Writing…");
+          var body = { message: msg.value || "Update portfolio content", content: utf8b64(dataJs()), branch: b }; if (cur && cur.sha) body.sha = cur.sha;
+          return fetch(url, { method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, hd), body: JSON.stringify(body) });
+        }).then(function (res) { return res.json().then(function (j) { if (!res.ok) throw new Error((j && j.message) || ("GitHub said " + res.status)); return j; }); })
+          .then(function (j) { say("Published. Commit " + (j.commit && j.commit.sha ? j.commit.sha.slice(0, 7) : "") + " is on " + b + ".\nIf Vercel is connected to this repository the live site updates in about a minute; otherwise redeploy from your terminal.", "ok"); })
+          .catch(function (e) { say(String(e.message || e), "err"); });
+      } }), log]);
+    wrap.appendChild(pub);
+
+    var file = h("input", { type: "file", accept: ".json,.js", style: "display:none", onchange: function () {
+      var f = file.files[0]; if (!f) return; var rd = new FileReader();
+      rd.onload = function () { try { var o = parseImport(String(rd.result)); data = Object.assign({}, ORIGINAL, o); delete data.contributions; changed(); toast("Imported"); render("general"); } catch (e) { alert("Could not import: " + e.message); } };
+      rd.readAsText(f);
+    } });
+    wrap.appendChild(h("section", { class: "ad-block glass" }, [h("h3", { text: "Backup and manual publish" }),
+      h("p", { class: "hint", text: "Download data.js and put it in assets/js/ (then commit and push, or deploy), or load a saved file back in." }),
+      h("div", { class: "ad-row-h" }, [
+        h("button", { class: "ad-btn pri", type: "button", text: "Download data.js", onclick: function () { download("data.js", dataJs(), "text/javascript"); } }),
+        h("button", { class: "ad-btn", type: "button", text: "Download JSON", onclick: function () { download("portfolio-data.json", JSON.stringify(strip(data), null, 2), "application/json"); } }),
+        h("button", { class: "ad-btn", type: "button", text: "Import data.js / JSON", onclick: function () { file.click(); } }), file,
+        h("button", { class: "ad-btn danger", type: "button", text: "Discard my edits", onclick: function () { if (confirm("Discard all unpublished edits in this browser and go back to the published data?")) { localStorage.removeItem(KEY); data = JSON.parse(JSON.stringify(ORIGINAL)); delete data.contributions; refreshState(); toast("Reset to published"); render("general"); } } })
+      ])]));
+    return wrap;
+  }
+  function jsonView() {
+    var ta = h("textarea", { class: "ad-json", spellcheck: "false" }); ta.value = JSON.stringify(strip(data), null, 2);
+    var err = h("div", { class: "ad-log err" });
+    return h("div", null, [h("section", { class: "ad-block glass" }, [h("h3", { text: "Raw data" }), ta,
+      h("div", { class: "ad-row-h", style: "margin-top:12px" }, [h("button", { class: "ad-btn pri", type: "button", text: "Apply JSON", onclick: function () {
+        try { var o = JSON.parse(ta.value); if (!o || typeof o !== "object" || Array.isArray(o)) throw new Error("Top level must be an object"); data = o; changed(); toast("Applied"); err.className = "ad-log"; }
+        catch (e) { err.className = "ad-log err show"; err.textContent = "Invalid JSON: " + e.message; } } })]), err])]);
+  }
+
+  function render(id) {
+    curId = id || curId;
+    var sec = SECTIONS.filter(function (s) { return s.id === curId; })[0] || SECTIONS[0];
+    main.innerHTML = "";
+    var t = sec.title.split(" "), last = t.pop();
+    main.appendChild(h("h1", null, [t.join(" ") + " ", h("em", { text: last })]));
+    main.appendChild(h("p", { class: "ad-sub", text: sec.sub }));
+    if (sec.special === "publish") main.appendChild(publishView());
+    else if (sec.special === "json") main.appendChild(jsonView());
+    else sec.blocks.forEach(function (b) { main.appendChild(block(b)); });
+    document.querySelectorAll(".ad-side a").forEach(function (a) { a.classList.toggle("on", a.dataset.id === curId); });
+    try { history.replaceState(null, "", "#" + curId); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+
+  function build() {
+    app = document.getElementById("app");
+    stateEl = h("span", { class: "ad-state" });
+    toastEl = h("div", { class: "ad-toast" });
+    var side = h("nav", { class: "ad-side" }), lastG = "";
+    SECTIONS.forEach(function (s) {
+      if (s.g !== lastG) { side.appendChild(h("h4", { text: s.g })); lastG = s.g; }
+      var a = h("a", { "data-id": s.id, onclick: function () { render(s.id); } }, [h("em", { text: s.n }), s.title]); a.dataset.id = s.id; side.appendChild(a);
+    });
+    var top = h("header", { class: "ad-top" }, [
+      h("div", { class: "ad-brand" }, ["Admin ", h("em", { text: "console" })]), stateEl,
+      h("a", { class: "ad-btn", href: "index.html", target: "_blank", rel: "noopener", text: "Preview site ↗" }),
+      h("button", { class: "ad-btn pri", type: "button", text: "Publish…", onclick: function () { render("publish"); } })
+    ]);
+    main = h("main", { class: "ad-main" });
+    app.appendChild(top);
+    app.appendChild(h("div", { class: "ad-wrap" }, [side, main]));
+    document.body.appendChild(toastEl);
+    refreshState();
+    var start = (location.hash || "").slice(1);
+    render(SECTIONS.some(function (s) { return s.id === start; }) ? start : "general");
+  }
+  build();
+})();

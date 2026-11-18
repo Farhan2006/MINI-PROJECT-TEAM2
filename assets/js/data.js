@@ -28,11 +28,6 @@ window.SITE = {
     { name: "Asmita Aiholi",      dept: "Department of VLSI" }
   ],
 
-  /* Contribution table — updated each review */
-  contributions: [
-    // { review: "Review 1", member: "Swaroop T", work: "Background study of ..." }
-  ],
-
   /* Latest update shown on Home */
   latest: { date: "2026-11-18", text: "Portfolio site set up. Review 1 content in progress." },
 
