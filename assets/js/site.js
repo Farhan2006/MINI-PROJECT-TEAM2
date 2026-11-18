@@ -181,6 +181,8 @@
       '<div class="chips reveal" style="--d:3"><span class="chip"><b>EE-VDT</b> · KLE Technological University, Hubballi</span>' + (S.slug ? '<span class="chip">' + esc(S.slug) + "</span>" : "") + "</div>" +
       '<div class="hero-cta reveal" style="--d:4"><a class="btn primary" href="problem.html">Start with the problem</a><a class="btn ghost" href="notebook.html">Read the notebook</a></div>' +
       teamPhotoBlock + "</section>" +
+      aboutHTML() +
+      chainHTML() +
       sec("Inside the <em>chip</em>", "Scroll to pull the FPGA apart, layer by layer.", anatomyHTML()) +
       sec("Progress", done + " of 16 design steps complete.",
         '<div class="glass pad ' + rv() + '"><div class="strip">' + strip + '</div><div class="strip-labels">' + labels + "</div>" +
@@ -192,6 +194,43 @@
       sec("The team", "", teamCards() + '<h3 style="margin:34px 0 14px" class="reveal">Faculty guides</h3>' + facultyCards());
   };
 
+  function ul(list) { return "<ul>" + (list || []).map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"; }
+  function aboutHTML() {
+    var A = S.about; if (!A) return "";
+    var objs = (A.objectives || []).map(function (o, i) { return "<li><i>" + String(i + 1).padStart(2, "0") + "</i><span>" + esc(o) + "</span></li>"; }).join("");
+    var chips = function (arr) { return (arr || []).map(function (c) { return '<span class="chip">' + esc(c) + "</span>"; }).join(""); };
+    return sec("About the <em>project</em>", esc(S.fullTitle || S.title),
+      '<div class="about"><div class="about-main glass pad ' + rv() + '"><span class="tag blue">Objective</span><p class="about-obj">' + esc(A.objective) + "</p>" +
+      (A.summary ? '<p class="muted about-sum">' + esc(A.summary) + "</p>" : "") + '<div class="chips">' + chips(A.domain) + "</div></div>" +
+      '<div class="about-goals ' + rv() + '"><h3>Technical objectives</h3><ol>' + objs + "</ol></div></div>" +
+      ((A.technologies || []).length ? '<div class="tech ' + rv() + '"><small>Technologies</small>' + chips(A.technologies) + "</div>" : ""));
+  }
+  /* interactive signal chain (home). Behaviour lives in motion.js */
+  function chainHTML() {
+    var C = S.chain; if (!C || !C.length) return "";
+    function btn(c, i) {
+      var p = byId[c.page];
+      return '<button type="button" class="cblock ' + (c.group === "control" ? "ctl" : "sig") + '" data-id="' + esc(c.id) + '"' + (p ? ' data-href="' + esc(p.file) + '" data-page="' + esc(p.title) + '"' : "") + ' aria-pressed="false">' +
+        '<span class="cb-n">' + String(i + 1).padStart(2, "0") + '</span><span class="cb-t"><b>' + esc(c.name) + "</b><span>" + esc(c.sub) + '</span></span><canvas class="cviz" data-viz="' + esc(c.viz || "wave-in") + '" aria-hidden="true"></canvas></button>';
+    }
+    var idx = {}; C.forEach(function (c, i) { idx[c.id] = i; });
+    var sig = C.filter(function (c) { return c.group !== "control"; }), ctl = C.filter(function (c) { return c.group === "control"; });
+    var sigHTML = sig.map(function (c, i) { return (i ? '<div class="carrow" aria-hidden="true"><i></i></div>' : "") + btn(c, idx[c.id]); }).join("");
+    var ctlHTML = ctl.length ? '<div class="chain-ctl"><small>Gain-control path</small><div class="ctl-row">' + ctl.map(function (c, i) { return (i ? '<div class="carrow h" aria-hidden="true"><i></i></div>' : "") + btn(c, idx[c.id]); }).join("") + "</div>" + (S.chainNote ? '<p class="chain-note">' + esc(S.chainNote) + "</p>" : "") + "</div>" : "";
+    var first = C[0];
+    return sec("Signal <em>chain</em>", "Click any block to see what it does, then jump to the page where it is designed.",
+      '<div class="chain" data-sel="' + esc(first.id) + '"><div class="chain-diagram glass ' + rv() + '"><div class="cbus" aria-hidden="true"><i></i></div><div class="chain-sig">' + sigHTML + "</div>" + ctlHTML + "</div>" +
+      '<aside class="chain-detail glass ' + rv() + '" aria-live="polite"><div class="cd-top"><span class="cd-n"></span><span class="tag blue cd-grp"></span></div><h3 class="cd-title"></h3><p class="cd-sub"></p><canvas class="cd-viz" aria-hidden="true"></canvas><p class="cd-info"></p><ul class="cd-facts"></ul>' +
+      '<div class="cd-actions"><a class="btn primary cd-link" href="#">Open page</a><button type="button" class="btn ghost cd-next">Next block →</button></div></aside></div>');
+  }
+  function flowHTML(a) {
+    if (!a.flow || !a.flow.length) return "";
+    var nodes = a.flow.map(function (f, i) {
+      return (i ? '<div class="farrow" aria-hidden="true"><i></i></div>' : "") + '<div class="fnode n' + i + '"><b>' + esc(f.name) + "</b><span>" + esc(f.sub) + "</span></div>";
+    }).join("");
+    var ctl = a.controlPath ? '<div class="fctl"><div class="fup" aria-hidden="true"><i></i></div><div class="fnode ctl"><b>' + esc(a.controlPath.name) + "</b><span>" + esc(a.controlPath.sub) + "</span></div></div>" : "";
+    return '<div class="flow glass ' + rv() + '"><div class="flow-row">' + nodes + "</div>" + ctl + "</div>";
+  }
   /* scroll-driven exploded view of the FPGA (animated by motion.js) */
   function anatomyHTML() {
     var steps = [
@@ -215,7 +254,7 @@
   function teamCards() {
     return '<div class="grid g4">' + S.members.map(function (m) {
       var pic = m.photo ? '<img loading="lazy" src="' + esc(m.photo) + '" alt="' + esc(m.name) + '">' : "<span>" + esc(initials(m.name)) + "</span>";
-      return '<div class="person glass spot lift ' + rv() + '"><div class="photo' + (m.photo ? "" : " empty") + '">' + pic + "</div><h3>" + esc(m.name) + '</h3><div class="usn">' + esc(m.usn) + '</div><div class="mail"><a href="mailto:' + esc(m.email) + '">' + esc(m.email) + "</a></div></div>";
+      return '<div class="person glass spot lift ' + rv() + '"><div class="photo' + (m.photo ? "" : " blank") + '">' + pic + "</div><h3>" + esc(m.name) + '</h3><div class="usn">' + esc(m.usn) + '</div><div class="mail"><a href="mailto:' + esc(m.email) + '">' + esc(m.email) + "</a></div></div>";
     }).join("") + "</div>";
   }
   function facultyCards() {
@@ -267,11 +306,13 @@
       matrix = table(heads, rows, nums);
     } else matrix = empty("Comparison matrix pending", "Add <code>criteria</code> (with weights) and <code>alternatives</code> (with scores) in data.js — totals are calculated for you.");
     var alts = c.alternatives.length ? '<div class="grid g3">' + c.alternatives.map(function (a) {
-      return '<div class="glass spot ' + rv() + '" style="overflow:hidden">' + (a.sketch ? '<img loading="lazy" src="' + esc(a.sketch) + '" alt="Sketch of ' + esc(a.name) + '">' : "") + '<div class="pad"><h3>' + esc(a.name) + '</h3><p class="muted" style="margin-top:6px">' + esc(a.summary) + "</p>" + (a.rejectedBecause ? '<p style="margin-top:10px;font-size:13.5px"><span class="tag warn">Set aside</span> ' + esc(a.rejectedBecause) + "</p>" : "") + "</div></div>";
+      return '<div class="glass spot ' + rv() + '" style="overflow:hidden">' + (a.sketch ? '<img loading="lazy" src="' + esc(a.sketch) + '" alt="Sketch of ' + esc(a.name) + '">' : "") + '<div class="pad"><h3>' + esc(a.name) + '</h3><p class="muted" style="margin-top:6px">' + esc(a.summary) + "</p>" + ((a.pros || []).length ? '<h4 class="pc-h">Advantages</h4><div class="pc pro">' + ul(a.pros) + "</div>" : "") + ((a.cons || []).length ? '<h4 class="pc-h">Limitations</h4><div class="pc con">' + ul(a.cons) + "</div>" : "") + (a.rejectedBecause ? '<p style="margin-top:10px;font-size:13.5px"><span class="tag warn">Set aside</span> ' + esc(a.rejectedBecause) + "</p>" : "") + "</div></div>";
     }).join("") + "</div>" : empty("At least three alternatives needed for Review 2", "Add sketches and a one-line summary each. Rejected options stay on the site, with the reason.");
     var chosen = c.chosen ? '<div class="callout glass ' + rv() + '"><div class="big">Chosen</div><div><p><b>' + esc(c.chosen) + "</b></p><p class='muted' style='font-size:15px;margin-top:6px'>" + esc(c.reason) + "</p></div></div>" : "";
     var scope = (c.scopeIn.length || c.scopeOut.length) ? '<div class="grid g2" style="margin-top:16px"><div class="glass pad ' + rv() + '"><h3>In scope</h3><ul style="padding-left:18px;margin-top:8px">' + c.scopeIn.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul></div><div class="glass pad ' + rv() + '"><h3>Out of scope</h3><ul style="padding-left:18px;margin-top:8px">' + c.scopeOut.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div></div>" : "";
+    var cmp = c.comparison && c.comparison.rows && c.comparison.rows.length ? table(c.comparison.heads, c.comparison.rows.map(function (r) { return R(r.map(function (x, i) { return i ? esc(x) : "<b>" + esc(x) + "</b>"; })); })) : "";
     return sec("Alternatives", "At least three, sketched and compared fairly.", alts) +
+      (cmp ? sec("The methods side by side", "Feature-by-feature comparison of the three gain-control methods.", cmp) : "") +
       sec("Comparison", "Weighted criteria. The highest total is highlighted.", matrix) +
       sec("Decision", "", (chosen || empty("Concept not chosen yet", "Record the chosen concept and the reason.")) + scope) + decisionsFor("concepts");
   };
@@ -295,8 +336,12 @@
     var ch = a.subsystemChoices.length ? '<div class="grid g2">' + a.subsystemChoices.map(function (s) {
       return '<div class="glass pad spot ' + rv() + '"><h3>' + esc(s.subsystem) + '</h3><p class="muted" style="margin:8px 0">' + s.options.map(function (o) { return '<span class="tag' + (o === s.chosen ? " good" : "") + '">' + esc(o) + "</span>"; }).join(" ") + "</p><p style='font-size:14.5px'>" + esc(s.reason) + "</p></div>";
     }).join("") + "</div>" : empty("Subsystem alternatives pending", "For each block list the options considered, the selection, and why.");
-    return sec("Block diagram", "", diag + (blocks ? '<div style="margin-top:16px">' + blocks + "</div>" : "")) +
-      sec("Subsystem selection", "Alternatives considered for each block.", ch) + decisionsFor("architecture");
+    var paths = (a.paths || []).length ? '<div class="grid g2" style="margin-top:14px">' + a.paths.map(function (p) { return '<div class="glass pad ' + rv() + '"><h3>' + esc(p.title) + '</h3><ol class="steps-ol">' + p.steps.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ol></div>"; }).join("") + "</div>" : "";
+    var note = a.note ? '<div class="callout glass ' + rv() + '" style="margin-top:14px"><div class="big">Important</div><p>' + esc(a.note) + "</p></div>" : "";
+    var hier = (a.hierarchy || []).length ? '<div class="grid g3">' + a.hierarchy.map(function (h, i) { return '<div class="glass pad hier ' + rv() + '"><span class="tag ' + (i ? "" : "good") + '">' + esc(h.label) + "</span><p>" + esc(h.text) + "</p></div>"; }).join("") + "</div>" : "";
+    return sec("System flow", "The analog signal path and the gain-control path.", flowHTML(a) + paths + note) +
+      sec("Block diagram", "", diag + (blocks ? '<div style="margin-top:16px">' + blocks + "</div>" : "")) +
+      sec("Subsystem selection", "Alternatives considered for each block.", ch) + (hier ? sec("Design hierarchy", "", hier) : "") + decisionsFor("architecture");
   };
 
   views.design = function () {
@@ -349,7 +394,8 @@
     });
     var V = S.validation;
     var inst = V.instruments.length ? table(["Instrument", "Settings"], V.instruments.map(function (i) { return R([esc(i.instrument), esc(i.settings)]); })) : empty("Instrument settings pending", "Record each instrument and its settings.");
-    return sec("Validation sheet", "Predicted, measured, deviation and explanation for every FR (Appendix G).", rows.length ? table(["FR", "Target", "Predicted", "Measured", "Deviation", "Explanation"], rows) : empty("Nothing to validate yet", "FRs from the requirements page appear here automatically.")) +
+    var plan = (V.plan || []).length ? table(["Parameter", "What to measure"], V.plan.map(function (p) { return R(["<b>" + esc(p.parameter) + "</b>", esc(p.measure)]); })) : "";
+    return (plan ? sec("Measurement plan", "Planned measurements only. No values are shown until they are measured on the bench.", plan) : "") + sec("Validation sheet", "Predicted, measured, deviation and explanation for every FR (Appendix G).", rows.length ? table(["FR", "Target", "Predicted", "Measured", "Deviation", "Explanation"], rows) : empty("Nothing to validate yet", "FRs from the requirements page appear here automatically.")) +
       sec("Instruments", "", inst) + sec("Setup", "", mediaGrid(V.media, "Setup photo pending", "Photograph of the measurement setup.")) +
       sec("One improvement, re-measured", "", V.improvement ? '<div class="glass pad ' + rv() + '"><p>' + esc(V.improvement) + "</p></div>" : empty("Not yet", "Describe the improvement and the re-measurement.")) + decisionsFor("validation");
   };

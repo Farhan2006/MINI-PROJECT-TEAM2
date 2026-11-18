@@ -47,16 +47,20 @@
   function A(k, l, o) { return T(k, l, Object.assign({ t: "area", full: true }, o || {})); }
   function N(k, l, o) { return T(k, l, Object.assign({ t: "num" }, o || {})); }
   function D(k, l, o) { return T(k, l, Object.assign({ t: "date" }, o || {})); }
+  function L(k, l, o) { return T(k, l, Object.assign({ t: "lines", full: true }, o || {})); }
+  function IMG(k, l, o) { return T(k, l, Object.assign({ t: "image", full: true, max: 1400 }, o || {})); }
   function S(k, l, opts, o) { return T(k, l, Object.assign({ t: "sel", o: opts }, o || {})); }
   var PAGE_IDS = ["problem", "concepts", "requirements", "architecture", "design", "build", "validation", "failures"];
-  var MEDIA = [S("type", "Type", ["image", "video", "embed"]), T("src", "File or URL (e.g. assets/img/x.png)"), T("caption", "Caption", { full: true })];
+  var MEDIA = [S("type", "Type", ["image", "video", "embed"]), IMG("src", "Image (upload) or video / embed URL"), T("caption", "Caption", { full: true })];
 
   var SECTIONS = [
     { g: "Overview", id: "general", n: "0", title: "Home and general", sub: "Title, subtitle, dates and the 16-step progress strip shown on the Home page.", blocks: [
-      { f: [T("title", "Project title", { full: true }), T("subtitle", "Subtitle", { full: true }), T("dept", "Department", { full: true }), T("school", "School / university", { full: true }), T("slug", "Project slug"), T("theme", "Theme"), T("artefact", "Artefact"), T("teamNo", "Team number"),
+      { f: [T("title", "Project title", { full: true }), T("fullTitle", "Full project title (shown in the About section)", { full: true }), T("subtitle", "Subtitle", { full: true }), T("dept", "Department", { full: true }), T("school", "School / university", { full: true }), T("slug", "Project slug"), T("theme", "Theme"), T("artefact", "Artefact"), T("teamNo", "Team number"),
         { k: "showTeamPhoto", l: "Team photo on the Home page", t: "bool", def: true, full: true, yes: "Show the team photo (untick to hide the whole block)" },
         { k: "teamPhoto", l: "Team photo", t: "image", full: true, max: 1800, wide: true }] },
       { path: "latest", label: "Latest update (Home)", f: [D("date", "Date"), A("text", "Text")] },
+      { path: "about", label: "About the project (Home)", f: [A("objective", "Objective"), A("summary", "Summary"), T("domain", "Domain (comma-separated)", { t: "csv", full: true }), T("technologies", "Technologies (comma-separated)", { t: "csv", full: true })] },
+      { path: "about.objectives", label: "Technical objectives", strings: true, hint: "One objective per line." },
       { f: [D("defaultUpdated", "Default 'last updated' date for pages")], label: "Page dates" },
       { path: "steps", label: "Design steps", hint: "Status drives the progress strip: done, progress or next.", rows: [N("n", "Step number"), T("label", "Label"), S("status", "Status", ["done", "progress", "next"])], title: "label", noReorder: false }
     ] },
@@ -73,7 +77,7 @@
     ] },
     { g: "Design chain", id: "concepts", n: "3", title: "Concept choices", sub: "Criteria, alternatives, scoring and the chosen concept.", blocks: [
       { path: "concepts.criteria", label: "Decision criteria", rows: [T("name", "Criterion"), N("weight", "Weight")], title: "name" },
-      { path: "concepts.alternatives", label: "Alternatives", rows: [T("name", "Concept name"), T("sketch", "Sketch image path"), A("summary", "Summary"), A("rejectedBecause", "Set aside because"), { k: "scores", l: "Scores per criterion", t: "scores" }], title: "name" },
+      { path: "concepts.alternatives", label: "Alternatives", rows: [T("name", "Concept name"), IMG("sketch", "Sketch image"), A("summary", "Summary"), A("rejectedBecause", "Set aside because"), L("pros", "Advantages (one per line)"), L("cons", "Limitations (one per line)"), { k: "scores", l: "Scores per criterion", t: "scores" }], title: "name" },
       { path: "concepts", label: "Choice", f: [T("chosen", "Chosen concept", { full: true }), A("reason", "Reason")] },
       { path: "concepts.scopeIn", label: "In scope", strings: true, hint: "One item per line." },
       { path: "concepts.scopeOut", label: "Out of scope", strings: true, hint: "One item per line." }
@@ -84,8 +88,13 @@
       { path: "frHistory", top: true, label: "Change history", rows: [D("date", "Date"), T("fr", "FR"), T("change", "Change", { full: true }), A("reason", "Reason")], title: "fr" }
     ] },
     { g: "Design chain", id: "architecture", n: "5", title: "Architecture and subsystems", sub: "Block diagram, blocks and subsystem choices.", blocks: [
-      { path: "architecture", label: "Diagram", f: [T("diagram", "Block diagram image path", { full: true })] },
+      { path: "architecture.flow", label: "System flow (left to right)", rows: [T("name", "Block"), T("sub", "Short description")], title: "name" },
+      { path: "architecture.controlPath", label: "Gain-control path (shown under the flow)", f: [T("name", "Name"), T("sub", "Description", { full: true })] },
+      { path: "architecture.paths", label: "Signal paths", rows: [T("title", "Title", { full: true }), L("steps", "Steps (one per line)")], title: "title" },
+      { path: "architecture", label: "Important note", f: [A("note", "Highlighted note")] },
+      { path: "architecture", label: "Diagram image", f: [IMG("diagram", "Block diagram image")] },
       { path: "architecture.blocks", label: "Blocks", rows: [T("name", "Block"), T("fr", "FR it serves"), T("input", "Input"), T("output", "Output")], title: "name" },
+      { path: "architecture.hierarchy", label: "Design hierarchy", rows: [T("label", "Label (e.g. Primary design)"), A("text", "Description")], title: "label" },
       { path: "architecture.subsystemChoices", label: "Subsystem choices", rows: [T("subsystem", "Subsystem"), { k: "options", l: "Options considered (comma-separated)", t: "csv", full: true }, T("chosen", "Chosen"), A("reason", "Reason")], title: "subsystem" }
     ] },
     { g: "Design chain", id: "design", n: "6", title: "Design and calculations", sub: "Calculations, components, schematic media and bill of materials.", blocks: [
@@ -105,7 +114,7 @@
       { path: "map", label: "Foundation Integration Map (Appendix D)", rows: [T("step", "Step"), T("decision", "Decision ID"), T("course", "Course"), T("concept", "Concept"), S("level", "Level", ["Named", "Applied", "Verified"])], title: "decision" }
     ] },
     { g: "Design chain", id: "build", n: "8", title: "Build and verification", sub: "Simulations, subsystem tests, build media and deviations.", blocks: [
-      { path: "build.sims", label: "Simulations", rows: [T("title", "Title", { full: true }), T("tool", "Tool"), T("src", "Image path"), A("result", "Result"), T("caption", "Caption", { full: true })], title: "title" },
+      { path: "build.sims", label: "Simulations", rows: [T("title", "Title", { full: true }), T("tool", "Tool"), IMG("src", "Image"), A("result", "Result"), T("caption", "Caption", { full: true })], title: "title" },
       { path: "build.tests", top: true, label: "Subsystem tests", rows: [T("subsystem", "Subsystem"), D("date", "Date"), T("test", "Test", { full: true }), T("result", "Result", { full: true }), { k: "pass", l: "Passed", t: "bool" }], title: "subsystem" },
       { path: "build.media", label: "Build media", rows: MEDIA, title: "caption" },
       { path: "build.deviations", top: true, label: "Deviations", rows: [D("date", "Date"), T("what", "What changed", { full: true }), A("reason", "Why")], title: "what" }
@@ -113,6 +122,7 @@
     { g: "Design chain", id: "validation", n: "9", title: "Predicted vs measured", sub: "Instruments, evidence and the improvement that was re-measured.", blocks: [
       { path: "validation.instruments", label: "Instruments", rows: [T("instrument", "Instrument"), T("settings", "Settings", { full: true })], title: "instrument" },
       { path: "validation.media", label: "Evidence media", rows: MEDIA, title: "caption" },
+      { path: "validation.plan", label: "Measurement plan", hint: "What will be measured. Do not enter results here; results go in the Requirements table once measured.", rows: [T("parameter", "Parameter"), T("measure", "What to measure", { full: true })], title: "parameter" },
       { path: "validation", label: "Improvement", f: [A("improvement", "The one improvement that was re-measured")] }
     ] },
     { g: "Design chain", id: "failures", n: "10", title: "Failures and fixes", sub: "Failure cycles: symptom, root cause, correction and learning.", blocks: [
@@ -133,7 +143,7 @@
       { path: "lessons.carry", label: "Lessons: to carry forward", strings: true, hint: "One per line." }
     ] },
     { g: "Closing", id: "demo", n: "14", title: "Final demonstration", sub: "Demo video and summary poster.", blocks: [
-      { path: "demo", label: "Demo", f: [T("video", "Video (mp4 path, or YouTube/Drive embed URL)", { full: true }), T("poster", "Summary poster image path", { full: true })] }
+      { path: "demo", label: "Demo", f: [T("video", "Video (mp4 path, or YouTube/Drive embed URL)", { full: true }), IMG("poster", "Summary poster image")] }
     ] },
     { g: "Closing", id: "files", n: "15", title: "Project files", sub: "Links to the report, repositories, schematics and simulations.", blocks: [
       { path: "files", label: "Files", rows: [T("label", "Label", { full: true }), T("href", "Link", { full: true }), T("note", "Note")], title: "label" }
@@ -145,7 +155,7 @@
   /* ---------- field renderers ---------- */
   function defFor(cols) {
     var o = {};
-    cols.forEach(function (c) { o[c.k] = c.t === "num" ? 0 : c.t === "bool" ? !!c.def : c.t === "sel" ? c.o[0] : c.t === "rows" || c.t === "csv" ? [] : c.t === "scores" ? {} : ""; });
+    cols.forEach(function (c) { o[c.k] = c.t === "num" ? 0 : c.t === "bool" ? !!c.def : c.t === "sel" ? c.o[0] : c.t === "rows" || c.t === "csv" || c.t === "lines" ? [] : c.t === "scores" ? {} : ""; });
     return o;
   }
   /* ---- images: resized in the browser, kept as data URLs until published ---- */
@@ -185,6 +195,11 @@
   }
   function fieldEl(c, obj, rerender) {
     if (c.t === "image") return imageEl(c, obj);
+    if (c.t === "lines") {
+      var lw = h("div", { class: "cp-f full" }, [h("label", { text: c.l })]);
+      var lta = h("textarea", { style: "min-height:110px", oninput: function () { obj[c.k] = lta.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean); changed(); } });
+      lta.value = (obj[c.k] || []).join("\n"); lw.appendChild(lta); return lw;
+    }
     var wrap = h("div", { class: "cp-f" + (c.full ? " full" : "") });
     var id = "f" + Math.random().toString(36).slice(2, 8);
     if (c.t === "rows") {
@@ -303,8 +318,13 @@
         localStorage.setItem("vdt_gh_repo", r); localStorage.setItem("vdt_gh_branch", b); sessionStorage.setItem("vdt_gh_token", t);
         var url = "https://api.github.com/repos/" + r + "/contents/assets/js/data.js", hd = { Authorization: "Bearer " + t, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
         var imgs = [];
-        if (isDataUrl(data.teamPhoto)) imgs.push({ kind: "team", obj: data, key: "teamPhoto" });
-        (data.members || []).forEach(function (m, i) { if (isDataUrl(m.photo)) imgs.push({ kind: "member-" + (i + 1), obj: m, key: "photo" }); });
+        (function walk(o, trail) {
+          if (!o || typeof o !== "object") return;
+          Object.keys(o).forEach(function (k) {
+            if (isDataUrl(o[k])) imgs.push({ kind: (trail.concat(k).join("-") || "image").replace(/[^a-z0-9-]/gi, "").toLowerCase().slice(0, 40), obj: o, key: k });
+            else walk(o[k], trail.concat(k));
+          });
+        })(data, []);
         say(imgs.length ? "Uploading " + imgs.length + " photo(s)…" : "Reading current data.js…");
         var chain = Promise.resolve();
         imgs.forEach(function (it, i) {
