@@ -528,6 +528,9 @@
 
   /* motion layer (optional enhancement: site works without it) */
   (function () {
+    var f = document.createElement("link"); f.rel = "stylesheet";
+    f.href = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap";
+    document.head.appendChild(f);
     var l = document.createElement("link"); l.rel = "stylesheet"; l.href = "assets/css/fx.css"; document.head.appendChild(l);
     var s = document.createElement("script"); s.src = "assets/js/fx.js"; s.defer = true; document.head.appendChild(s);
   })();

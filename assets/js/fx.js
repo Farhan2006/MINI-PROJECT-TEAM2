@@ -50,31 +50,52 @@
     });
   }
 
-  /* ---- pointer: soft follower + click ripple ---- */
+  /* ---- pointer: a "scope probe" — a glass lens with a live waveform inside.
+          Wave amplitude + the ×gain tag follow how fast you move (pointer speed = gain). ---- */
   function cursor() {
-    var dot = doc.createElement("div"), ring = doc.createElement("div");
-    dot.className = "cur-dot"; ring.className = "cur-ring";
-    doc.body.append(ring, dot);
-    var x = innerWidth / 2, y = innerHeight / 2, rx = x, ry = y, seen = false, big = false;
+    var NS = "http://www.w3.org/2000/svg";
+    var lens = doc.createElement("div"), tag = doc.createElement("div"), dot = doc.createElement("div");
+    lens.className = "probe"; tag.className = "probe-tag"; dot.className = "probe-dot";
+    lens.innerHTML = '<svg viewBox="0 0 64 64" width="64" height="64"><path class="pw" d=""/><path class="pw2" d=""/></svg>';
+    doc.body.append(lens, tag, dot);
+    var path = lens.querySelector(".pw"), path2 = lens.querySelector(".pw2");
+    var x = innerWidth / 2, y = innerHeight / 2, lx = x, ly = y, px = x, py = y, v = 0, seen = false, mode = "", t = 0;
     addEventListener("pointermove", function (e) {
       x = e.clientX; y = e.clientY;
-      if (!seen) { seen = true; rx = x; ry = y; doc.body.classList.add("cur-on"); }
-      var hot = e.target.closest && e.target.closest("a, button, .btn, .tilt, summary, label, .stage3d");
-      if (!!hot !== big) { big = !!hot; ring.classList.toggle("big", big); }
+      if (!seen) { seen = true; lx = px = x; ly = py = y; doc.body.classList.add("cur-on"); }
+      var el = e.target.closest ? e.target.closest("a, button, .btn, summary, label, .stage3d, .tilt") : null;
+      var m = !el ? "" : el.matches(".stage3d") ? "stage" : el.matches("a, .pcard, .pager a") ? "link" : el.matches(".btn, button") ? "btn" : "card";
+      if (m !== mode) {
+        mode = m; lens.className = "probe" + (m ? " " + m : ""); tag.className = "probe-tag" + (m ? " " + m : "");
+      }
     }, { passive: true });
     doc.addEventListener("pointerleave", function () { doc.body.classList.remove("cur-on"); seen = false; });
     doc.addEventListener("pointerdown", function (e) {
-      ring.classList.add("press");
+      lens.classList.add("press");
       var r = doc.createElement("div"); r.className = "cur-burst"; r.style.left = e.clientX + "px"; r.style.top = e.clientY + "px";
-      doc.body.appendChild(r); setTimeout(function () { r.remove(); }, 800);
+      doc.body.appendChild(r); setTimeout(function () { r.remove(); }, 900);
     });
-    doc.addEventListener("pointerup", function () { ring.classList.remove("press"); });
-    (function f() {
-      rx += (x - rx) * .16; ry += (y - ry) * .16;
-      ring.style.transform = "translate3d(" + rx + "px," + ry + "px,0)";
+    doc.addEventListener("pointerup", function () { lens.classList.remove("press"); });
+    var words = { stage: "CLICK · GAIN", link: "OPEN", btn: "GO", card: "" };
+    (function f(now) {
+      t = now / 1000;
+      lx += (x - lx) * .2; ly += (y - ly) * .2;
+      var sp = Math.hypot(x - px, y - py); px = x; py = y;
+      v += (Math.min(1, sp / 40) - v) * .12;
+      lens.style.transform = "translate3d(" + lx + "px," + ly + "px,0)";
       dot.style.transform = "translate3d(" + x + "px," + y + "px,0)";
+      tag.style.transform = "translate3d(" + (lx + 30) + "px," + (ly + 24) + "px,0)";
+      var amp = mode ? 5 : 3 + v * 15, d = "", d2 = "";
+      for (var i = 0; i <= 32; i++) {
+        var X = 8 + i * 1.5, w = Math.sin(i * .42 - t * (mode ? 4 : 7));
+        d += (i ? "L" : "M") + X.toFixed(1) + " " + (32 - w * amp * .45).toFixed(1);
+        d2 += (i ? "L" : "M") + X.toFixed(1) + " " + (32 - w * amp).toFixed(1);
+      }
+      path.setAttribute("d", d); path2.setAttribute("d", d2);
+      var txt = mode ? words[mode] : "×" + Math.max(1, Math.round(1 + v * 99));
+      if (tag.textContent !== txt) tag.textContent = txt;
       requestAnimationFrame(f);
-    })();
+    })(performance.now());
   }
 
   function start() {
@@ -85,7 +106,7 @@
     stage3d();
     if (!reduce && fine) cursor();
     if (!reduce) {
-      network();
+      flowField();
       amplifierWave();
       if (fine) { tilt(); magnetic(); }
     } else {
@@ -116,12 +137,21 @@
 
   /* ---- hero title: word-by-word entrance ---- */
   function heroWords() {
+    /* inner pages: last word of the title becomes an editorial serif italic */
+    var ph = doc.querySelector(".page-head h1");
+    if (ph && !doc.querySelector(".hero")) {
+      var ws = ph.textContent.trim().split(/\s+/);
+      if (ws.length > 1) {
+        var lastW = ws.pop().replace(/[&<>]/g, "");
+        ph.innerHTML = ws.join(" ").replace(/[&<>]/g, "") + ' <span class="ser">' + lastW + "</span>";
+      }
+    }
     var g = doc.querySelector(".hero h1 .grad");
     if (!g) return;
     var words = g.textContent.trim().split(/\s+/);
     g.className = "";
     g.innerHTML = words.map(function (w, i) {
-      return '<span class="w" style="--wi:' + i + '">' + w.replace(/[&<>]/g, "") + "</span>";
+      return '<span class="w' + (/gain/i.test(w) ? " ser" : "") + '" style="--wi:' + i + '">' + w.replace(/[&<>]/g, "") + "</span>";
     }).join(" ");
   }
 
@@ -182,47 +212,71 @@
     });
   }
 
-  /* ---- drifting circuit-node network (reacts to the pointer) ---- */
-  function network() {
+  /* ---- background: "signal ridges" — stacked waveforms (oscilloscope / ridge-plot look).
+          The pointer acts as a gain knob: ridges rise and ring where it passes. ---- */
+  function flowField() {
     var c = doc.createElement("canvas"); c.id = "fxNet";
     var amb = doc.querySelector(".ambient");
     doc.body.insertBefore(c, amb ? amb.nextSibling : doc.body.firstChild);
-    var ctx = c.getContext("2d"), W, H, dpr, pts = [], mouse = { x: -999, y: -999 }, running = true;
+    var ctx = c.getContext("2d"), W, H, dpr, N, running = true, t = 0, last = 0;
+    var m = { x: -9999, y: -9999, tx: -9999, ty: -9999, v: 0 }, lx = 0, ly = 0, sy = scrollY;
     function size() {
-      dpr = Math.min(devicePixelRatio || 1, 2);
-      W = c.width = innerWidth * dpr; H = c.height = innerHeight * dpr;
-      var n = Math.round(Math.min(70, innerWidth * innerHeight / 22000));
-      pts = [];
-      for (var i = 0; i < n; i++) pts.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .25 * dpr, vy: (Math.random() - .5) * .25 * dpr });
+      dpr = Math.min(devicePixelRatio || 1, 1.5);
+      W = c.width = Math.round(innerWidth * dpr); H = c.height = Math.round(innerHeight * dpr);
+      N = innerWidth < 700 ? 18 : 28;
     }
     size(); addEventListener("resize", size);
-    addEventListener("pointermove", function (e) { mouse.x = e.clientX * dpr; mouse.y = e.clientY * dpr; }, { passive: true });
-    doc.addEventListener("visibilitychange", function () { running = !doc.hidden; if (running) loop(); });
-    function loop() {
+    addEventListener("pointermove", function (e) {
+      m.tx = e.clientX * dpr; m.ty = e.clientY * dpr;
+      if (m.x < -9000) { m.x = m.tx; m.y = m.ty; }
+      m.v = Math.min(1, m.v + Math.hypot(e.clientX - lx, e.clientY - ly) / 90); lx = e.clientX; ly = e.clientY;
+    }, { passive: true });
+    doc.addEventListener("visibilitychange", function () { running = !doc.hidden; if (running) { last = 0; requestAnimationFrame(loop); } });
+
+    function loop(now) {
       if (!running) return;
+      var dt = Math.min(.05, (now - (last || now)) / 1000); last = now; t += dt;
+      m.x += (m.tx - m.x) * Math.min(1, dt * 7); m.y += (m.ty - m.y) * Math.min(1, dt * 7);
+      m.v *= Math.pow(.18, dt);
+      sy += (scrollY - sy) * Math.min(1, dt * 5);
+      var dark = isDark();
+      var bg = dark ? "0,0,0" : "245,245,247";
+      var a1 = dark ? "80,150,255" : "0,113,227", a2 = dark ? "170,130,255" : "94,92,230", a3 = dark ? "255,120,190" : "255,80,160";
       ctx.clearRect(0, 0, W, H);
-      var col = isDark() ? "150,170,255" : "0,113,227", link = 150 * dpr;
-      for (var i = 0; i < pts.length; i++) {
-        var p = pts[i];
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > W) p.vx *= -1;
-        if (p.y < 0 || p.y > H) p.vy *= -1;
-        var dx = p.x - mouse.x, dy = p.y - mouse.y, md = Math.sqrt(dx * dx + dy * dy);
-        if (md < 160 * dpr) { p.x += dx / md * .6; p.y += dy / md * .6; }
-        ctx.fillStyle = "rgba(" + col + ",.55)";
-        ctx.beginPath(); ctx.arc(p.x, p.y, 1.6 * dpr, 0, 6.283); ctx.fill();
-        for (var j = i + 1; j < pts.length; j++) {
-          var q = pts[j], ax = p.x - q.x, ay = p.y - q.y, d = Math.sqrt(ax * ax + ay * ay);
-          if (d < link) {
-            ctx.strokeStyle = "rgba(" + col + "," + (.22 * (1 - d / link)).toFixed(3) + ")";
-            ctx.lineWidth = dpr * .8;
-            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+      var top = H * -.01, span = H * 1.0, step = Math.max(4, Math.round(8 * dpr));
+      var g = ctx.createLinearGradient(0, 0, W, 0);
+      var al = dark ? .5 : .38;
+      g.addColorStop(0, "rgba(" + a1 + "," + al + ")"); g.addColorStop(.5, "rgba(" + a2 + "," + (al + .12) + ")"); g.addColorStop(1, "rgba(" + a3 + "," + al + ")");
+      var ph = sy * .0018;
+      for (var i = 0; i < N; i++) {
+        var k = i / (N - 1), by = top + span * k;                 /* ridge baseline */
+        var amp = (6 + 34 * k) * dpr * (.8 + .2 * Math.sin(i * 1.7));
+        var f1 = .0042 / dpr * (1 + .25 * Math.sin(i)), f2 = .011 / dpr;
+        ctx.beginPath();
+        var first = true, lastY = 0, lastX = 0;
+        for (var x = 0; x <= W + step; x += step) {
+          var y = by
+            + Math.sin(x * f1 + t * (.5 + .1 * Math.sin(i)) + i * .55 + ph) * amp
+            + Math.sin(x * f2 - t * .9 + i * 1.3) * amp * .28;
+          var dy = by - m.y, dx = x - m.x;
+          var near = Math.exp(-(dy * dy) / (2 * 150 * 150 * dpr * dpr));
+          if (near > .003) {
+            var bump = Math.exp(-(dx * dx) / (2 * 170 * 170 * dpr * dpr));
+            y -= near * bump * (46 + 90 * m.v) * dpr * (1 + .35 * Math.sin(x * .03 / dpr - t * 8));
           }
+          if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+          lastX = x; lastY = y;
         }
+        /* stroke the ridge, then fill below it so nearer ridges occlude farther ones */
+        ctx.strokeStyle = g; ctx.lineWidth = (.9 + k * .9) * dpr; ctx.globalAlpha = .25 + .75 * k;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineTo(lastX, H + 10); ctx.lineTo(0, H + 10); ctx.closePath();
+        ctx.fillStyle = "rgba(" + bg + "," + (dark ? .72 : .7) + ")"; ctx.fill();
       }
       requestAnimationFrame(loop);
     }
-    loop();
+    requestAnimationFrame(loop);
   }
 
   /* ---- hero: live "variable gain amplifier" — input sine and amplified output ---- */
