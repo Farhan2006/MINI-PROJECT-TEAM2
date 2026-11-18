@@ -23,6 +23,15 @@
           "value": "no-store"
         }
       ]
+    },
+    {
+      "source": "/assets/(js|css)/admin.(js|css)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ]
 }

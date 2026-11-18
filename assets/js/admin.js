@@ -32,7 +32,7 @@
   var stateEl, saveT;
   function dirty() { return JSON.stringify(strip(data)) !== JSON.stringify(strip(ORIGINAL)); }
   function strip(o) { var c = Object.assign({}, o); delete c.contributions; return c; }
-  function refreshState() { var d = dirty(); stateEl.textContent = d ? "Unpublished changes" : "Matches published data.js"; stateEl.className = "ad-state" + (d ? " dirty" : ""); }
+  function refreshState() { var d = dirty(); stateEl.textContent = d ? "Unpublished changes" : "Matches published data.js"; stateEl.className = "cp-state" + (d ? " dirty" : ""); }
   function changed() {
     clearTimeout(saveT);
     saveT = setTimeout(function () { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { toast("Could not save locally (storage blocked)"); } refreshState(); }, 250);
@@ -144,23 +144,23 @@
     return o;
   }
   function fieldEl(c, obj, rerender) {
-    var wrap = h("div", { class: "ad-f" + (c.full ? " full" : "") });
+    var wrap = h("div", { class: "cp-f" + (c.full ? " full" : "") });
     var id = "f" + Math.random().toString(36).slice(2, 8);
     if (c.t === "rows") {
-      wrap = h("div", { class: "ad-nested" }, [h("label", { text: c.l })]);
+      wrap = h("div", { class: "cp-nested" }, [h("label", { text: c.l })]);
       if (!Array.isArray(obj[c.k])) obj[c.k] = [];
       wrap.appendChild(rowsEl(obj[c.k], c.cols, { title: c.cols[0].k, small: true }, rerender));
       return wrap;
     }
     if (c.t === "scores") {
       var crit = (getPath(data, "concepts.criteria") || []).map(function (x) { return x.name; }).filter(Boolean);
-      wrap = h("div", { class: "ad-nested" }, [h("label", { text: c.l })]);
+      wrap = h("div", { class: "cp-nested" }, [h("label", { text: c.l })]);
       if (!obj.scores || typeof obj.scores !== "object") obj.scores = {};
-      if (!crit.length) { wrap.appendChild(h("div", { class: "ad-empty", text: "Add decision criteria above first." })); return wrap; }
-      var grid = h("div", { class: "ad-scores" });
+      if (!crit.length) { wrap.appendChild(h("div", { class: "cp-empty", text: "Add decision criteria above first." })); return wrap; }
+      var grid = h("div", { class: "cp-scores" });
       crit.forEach(function (name) {
         var inp = h("input", { type: "number", min: 0, max: 5, step: 1, value: obj.scores[name] == null ? "" : obj.scores[name], oninput: function () { obj.scores[name] = inp.value === "" ? 0 : Number(inp.value); changed(); } });
-        grid.appendChild(h("div", { class: "ad-f" }, [h("label", { text: name }), inp]));
+        grid.appendChild(h("div", { class: "cp-f" }, [h("label", { text: name }), inp]));
       });
       wrap.appendChild(grid); return wrap;
     }
@@ -189,7 +189,7 @@
     wrap.appendChild(el); return wrap;
   }
   function fieldsEl(obj, cols, rerender) {
-    var g = h("div", { class: "ad-fields" });
+    var g = h("div", { class: "cp-fields" });
     cols.forEach(function (c) { g.appendChild(fieldEl(c, obj, rerender)); });
     return g;
   }
@@ -197,31 +197,31 @@
     var box = h("div");
     function draw() {
       box.innerHTML = "";
-      if (!arr.length) box.appendChild(h("div", { class: "ad-empty", text: "Nothing here yet." }));
+      if (!arr.length) box.appendChild(h("div", { class: "cp-empty", text: "Nothing here yet." }));
       arr.forEach(function (item, i) {
         var tk = opt.title && item[opt.title] ? String(item[opt.title]).slice(0, 48) : "";
-        var head = h("div", { class: "ad-row-h" }, [
+        var head = h("div", { class: "cp-row-h" }, [
           h("b", { text: "#" + (i + 1) + (tk ? " · " + tk : "") }),
-          h("button", { class: "ad-btn sm", type: "button", title: "Move up", text: "↑", onclick: function () { if (i > 0) { arr.splice(i - 1, 0, arr.splice(i, 1)[0]); changed(); draw(); } } }),
-          h("button", { class: "ad-btn sm", type: "button", title: "Move down", text: "↓", onclick: function () { if (i < arr.length - 1) { arr.splice(i + 1, 0, arr.splice(i, 1)[0]); changed(); draw(); } } }),
-          h("button", { class: "ad-btn sm danger", type: "button", text: "Delete", onclick: function () { if (confirm("Delete this item?")) { arr.splice(i, 1); changed(); draw(); } } })
+          h("button", { class: "cp-btn sm", type: "button", title: "Move up", text: "↑", onclick: function () { if (i > 0) { arr.splice(i - 1, 0, arr.splice(i, 1)[0]); changed(); draw(); } } }),
+          h("button", { class: "cp-btn sm", type: "button", title: "Move down", text: "↓", onclick: function () { if (i < arr.length - 1) { arr.splice(i + 1, 0, arr.splice(i, 1)[0]); changed(); draw(); } } }),
+          h("button", { class: "cp-btn sm danger", type: "button", text: "Delete", onclick: function () { if (confirm("Delete this item?")) { arr.splice(i, 1); changed(); draw(); } } })
         ]);
-        box.appendChild(h("div", { class: "ad-row" }, [head, fieldsEl(item, cols, draw)]));
+        box.appendChild(h("div", { class: "cp-row" }, [head, fieldsEl(item, cols, draw)]));
       });
-      box.appendChild(h("button", { class: "ad-btn", type: "button", text: "+ Add" + (opt.top ? " (newest first)" : ""), onclick: function () { var it = defFor(cols); if (opt.top) arr.unshift(it); else arr.push(it); changed(); draw(); } }));
+      box.appendChild(h("button", { class: "cp-btn", type: "button", text: "+ Add" + (opt.top ? " (newest first)" : ""), onclick: function () { var it = defFor(cols); if (opt.top) arr.unshift(it); else arr.push(it); changed(); draw(); } }));
     }
     draw(); return box;
   }
   function stringsEl(path) {
     var arr = ensureArr(path), ta = h("textarea", { style: "min-height:140px", oninput: function () { setPath(data, path, ta.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean)); changed(); } });
     ta.value = arr.join("\n");
-    return h("div", { class: "ad-f full" }, [ta]);
+    return h("div", { class: "cp-f full" }, [ta]);
   }
 
   /* ---------- views ---------- */
   var app, main, curId = "general";
   function block(b) {
-    var card = h("section", { class: "ad-block glass" }, [h("h3", { text: b.label || "" })]);
+    var card = h("section", { class: "cp-block glass" }, [h("h3", { text: b.label || "" })]);
     if (b.hint) card.appendChild(h("p", { class: "hint", text: b.hint }));
     if (b.f) { var obj = b.path ? (getPath(data, b.path) || (setPath(data, b.path, {}), getPath(data, b.path))) : data; card.appendChild(fieldsEl(obj, b.f)); }
     else if (b.rows) card.appendChild(rowsEl(ensureArr(b.path), b.rows, { title: b.title, top: b.top }));
@@ -244,18 +244,18 @@
 
   function publishView() {
     var wrap = h("div");
-    wrap.appendChild(h("div", { class: "ad-note", text: "Edits you make here autosave in this browser only, and the site shows them to you as a preview. Visitors see changes only after you publish. Publishing writes assets/js/data.js to GitHub, which needs a GitHub token that only you have, so nobody else can publish from this page." }));
-    var log = h("div", { class: "ad-log" });
-    function say(msg, cls) { log.className = "ad-log show " + (cls || ""); log.textContent = msg; }
+    wrap.appendChild(h("div", { class: "cp-note", text: "Edits you make here autosave in this browser only, and the site shows them to you as a preview. Visitors see changes only after you publish. Publishing writes assets/js/data.js to GitHub, which needs a GitHub token that only you have, so nobody else can publish from this page." }));
+    var log = h("div", { class: "cp-log" });
+    function say(msg, cls) { log.className = "cp-log show " + (cls || ""); log.textContent = msg; }
 
     var repo = h("input", { type: "text", value: localStorage.getItem("vdt_gh_repo") || "Swaroop087/MINI-PROJECT-TEAM2" });
     var br = h("input", { type: "text", value: localStorage.getItem("vdt_gh_branch") || "main" });
     var tok = h("input", { type: "password", placeholder: "github_pat_… (Contents: read & write)", autocomplete: "off", value: sessionStorage.getItem("vdt_gh_token") || "" });
     var msg = h("input", { type: "text", value: "Update portfolio content via admin" });
-    var pub = h("section", { class: "ad-block glass" }, [h("h3", { text: "Publish to GitHub" }),
+    var pub = h("section", { class: "cp-block glass" }, [h("h3", { text: "Publish to GitHub" }),
       h("p", { class: "hint", text: "Create a fine-grained token at github.com → Settings → Developer settings, limited to this repository with Contents: Read and write. The token is kept for this tab only (never saved to disk or to the site)." }),
-      h("div", { class: "ad-gh" }, [h("div", null, [h("label", { text: "Repository (owner/name)" }), repo]), h("div", null, [h("label", { text: "Branch" }), br]), h("div", null, [h("label", { text: "Token" }), tok]), h("div", null, [h("label", { text: "Commit message" }), msg])]),
-      h("button", { class: "ad-btn pri", type: "button", text: "Publish data.js", onclick: function () {
+      h("div", { class: "cp-gh" }, [h("div", null, [h("label", { text: "Repository (owner/name)" }), repo]), h("div", null, [h("label", { text: "Branch" }), br]), h("div", null, [h("label", { text: "Token" }), tok]), h("div", null, [h("label", { text: "Commit message" }), msg])]),
+      h("button", { class: "cp-btn pri", type: "button", text: "Publish data.js", onclick: function () {
         var r = repo.value.trim(), b = br.value.trim() || "main", t = tok.value.trim();
         if (!/^[\w.-]+\/[\w.-]+$/.test(r)) return say("Repository must look like owner/name", "err");
         if (!t) return say("Paste a GitHub token first.", "err");
@@ -281,23 +281,23 @@
       rd.onload = function () { try { var o = parseImport(String(rd.result)); data = Object.assign({}, ORIGINAL, o); delete data.contributions; changed(); toast("Imported"); render("general"); } catch (e) { alert("Could not import: " + e.message); } };
       rd.readAsText(f);
     } });
-    wrap.appendChild(h("section", { class: "ad-block glass" }, [h("h3", { text: "Backup and manual publish" }),
+    wrap.appendChild(h("section", { class: "cp-block glass" }, [h("h3", { text: "Backup and manual publish" }),
       h("p", { class: "hint", text: "Download data.js and put it in assets/js/ (then commit and push, or deploy), or load a saved file back in." }),
-      h("div", { class: "ad-row-h" }, [
-        h("button", { class: "ad-btn pri", type: "button", text: "Download data.js", onclick: function () { download("data.js", dataJs(), "text/javascript"); } }),
-        h("button", { class: "ad-btn", type: "button", text: "Download JSON", onclick: function () { download("portfolio-data.json", JSON.stringify(strip(data), null, 2), "application/json"); } }),
-        h("button", { class: "ad-btn", type: "button", text: "Import data.js / JSON", onclick: function () { file.click(); } }), file,
-        h("button", { class: "ad-btn danger", type: "button", text: "Discard my edits", onclick: function () { if (confirm("Discard all unpublished edits in this browser and go back to the published data?")) { localStorage.removeItem(KEY); data = JSON.parse(JSON.stringify(ORIGINAL)); delete data.contributions; refreshState(); toast("Reset to published"); render("general"); } } })
+      h("div", { class: "cp-row-h" }, [
+        h("button", { class: "cp-btn pri", type: "button", text: "Download data.js", onclick: function () { download("data.js", dataJs(), "text/javascript"); } }),
+        h("button", { class: "cp-btn", type: "button", text: "Download JSON", onclick: function () { download("portfolio-data.json", JSON.stringify(strip(data), null, 2), "application/json"); } }),
+        h("button", { class: "cp-btn", type: "button", text: "Import data.js / JSON", onclick: function () { file.click(); } }), file,
+        h("button", { class: "cp-btn danger", type: "button", text: "Discard my edits", onclick: function () { if (confirm("Discard all unpublished edits in this browser and go back to the published data?")) { localStorage.removeItem(KEY); data = JSON.parse(JSON.stringify(ORIGINAL)); delete data.contributions; refreshState(); toast("Reset to published"); render("general"); } } })
       ])]));
     return wrap;
   }
   function jsonView() {
-    var ta = h("textarea", { class: "ad-json", spellcheck: "false" }); ta.value = JSON.stringify(strip(data), null, 2);
-    var err = h("div", { class: "ad-log err" });
-    return h("div", null, [h("section", { class: "ad-block glass" }, [h("h3", { text: "Raw data" }), ta,
-      h("div", { class: "ad-row-h", style: "margin-top:12px" }, [h("button", { class: "ad-btn pri", type: "button", text: "Apply JSON", onclick: function () {
-        try { var o = JSON.parse(ta.value); if (!o || typeof o !== "object" || Array.isArray(o)) throw new Error("Top level must be an object"); data = o; changed(); toast("Applied"); err.className = "ad-log"; }
-        catch (e) { err.className = "ad-log err show"; err.textContent = "Invalid JSON: " + e.message; } } })]), err])]);
+    var ta = h("textarea", { class: "cp-json", spellcheck: "false" }); ta.value = JSON.stringify(strip(data), null, 2);
+    var err = h("div", { class: "cp-log err" });
+    return h("div", null, [h("section", { class: "cp-block glass" }, [h("h3", { text: "Raw data" }), ta,
+      h("div", { class: "cp-row-h", style: "margin-top:12px" }, [h("button", { class: "cp-btn pri", type: "button", text: "Apply JSON", onclick: function () {
+        try { var o = JSON.parse(ta.value); if (!o || typeof o !== "object" || Array.isArray(o)) throw new Error("Top level must be an object"); data = o; changed(); toast("Applied"); err.className = "cp-log"; }
+        catch (e) { err.className = "cp-log err show"; err.textContent = "Invalid JSON: " + e.message; } } })]), err])]);
   }
 
   function render(id) {
@@ -306,32 +306,32 @@
     main.innerHTML = "";
     var t = sec.title.split(" "), last = t.pop();
     main.appendChild(h("h1", null, [t.join(" ") + " ", h("em", { text: last })]));
-    main.appendChild(h("p", { class: "ad-sub", text: sec.sub }));
+    main.appendChild(h("p", { class: "cp-sub", text: sec.sub }));
     if (sec.special === "publish") main.appendChild(publishView());
     else if (sec.special === "json") main.appendChild(jsonView());
     else sec.blocks.forEach(function (b) { main.appendChild(block(b)); });
-    document.querySelectorAll(".ad-side a").forEach(function (a) { a.classList.toggle("on", a.dataset.id === curId); });
+    document.querySelectorAll(".cp-side a").forEach(function (a) { a.classList.toggle("on", a.dataset.id === curId); });
     try { history.replaceState(null, "", "#" + curId); } catch (e) {}
     window.scrollTo(0, 0);
   }
 
   function build() {
     app = document.getElementById("app");
-    stateEl = h("span", { class: "ad-state" });
-    toastEl = h("div", { class: "ad-toast" });
-    var side = h("nav", { class: "ad-side" }), lastG = "";
+    stateEl = h("span", { class: "cp-state" });
+    toastEl = h("div", { class: "cp-toast" });
+    var side = h("nav", { class: "cp-side" }), lastG = "";
     SECTIONS.forEach(function (s) {
       if (s.g !== lastG) { side.appendChild(h("h4", { text: s.g })); lastG = s.g; }
       var a = h("a", { "data-id": s.id, onclick: function () { render(s.id); } }, [h("em", { text: s.n }), s.title]); a.dataset.id = s.id; side.appendChild(a);
     });
-    var top = h("header", { class: "ad-top" }, [
-      h("div", { class: "ad-brand" }, ["Admin ", h("em", { text: "console" })]), stateEl,
-      h("a", { class: "ad-btn", href: "index.html", target: "_blank", rel: "noopener", text: "Preview site ↗" }),
-      h("button", { class: "ad-btn pri", type: "button", text: "Publish…", onclick: function () { render("publish"); } })
+    var top = h("header", { class: "cp-top" }, [
+      h("div", { class: "cp-brand" }, ["Admin ", h("em", { text: "console" })]), stateEl,
+      h("a", { class: "cp-btn", href: "index.html", target: "_blank", rel: "noopener", text: "Preview site ↗" }),
+      h("button", { class: "cp-btn pri", type: "button", text: "Publish…", onclick: function () { render("publish"); } })
     ]);
-    main = h("main", { class: "ad-main" });
+    main = h("main", { class: "cp-main" });
     app.appendChild(top);
-    app.appendChild(h("div", { class: "ad-wrap" }, [side, main]));
+    app.appendChild(h("div", { class: "cp-wrap" }, [side, main]));
     document.body.appendChild(toastEl);
     refreshState();
     var start = (location.hash || "").slice(1);
