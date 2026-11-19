@@ -556,3 +556,6 @@ html { scroll-padding-top: 84px; }
 /* schematics and drawings: sit on paper, never on a black box (transparent PNGs keep their grey labels readable) */
 .fig img { background: var(--stone); padding: clamp(14px, 3vw, 28px); object-fit: contain; }
 .fig:has(img) { background: var(--stone); }
+
+.fig:has(img) figcaption { color: #6f6c66; }
+.fig:has(img) figcaption b { color: #131313; }
