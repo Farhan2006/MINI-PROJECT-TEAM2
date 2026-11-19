@@ -553,9 +553,32 @@ html { scroll-padding-top: 84px; }
 }
 .menu-open .rail { opacity: 0; pointer-events: none; }
 
-/* schematics and drawings: sit on paper, never on a black box (transparent PNGs keep their grey labels readable) */
-.fig img { background: var(--stone); padding: clamp(14px, 3vw, 28px); object-fit: contain; }
-.fig:has(img) { background: var(--stone); }
 
-.fig:has(img) figcaption { color: #6f6c66; }
-.fig:has(img) figcaption b { color: #131313; }
+
+
+/* ---------- gain-stage circuit (inline SVG, follows the theme) ---------- */
+.circuit { padding: clamp(16px, 3vw, 30px); margin: 0; }
+.circuit-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.circuit svg { display: block; width: 100%; min-width: 620px; height: auto; color: var(--fg); }
+.circuit .w path, .circuit .o path.op { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.circuit .w path { opacity: .72; }
+.circuit .w .hide { display: none; }
+.circuit .o path.op { stroke-width: 2.6; }
+.circuit .o path.sg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; opacity: .8; }
+.circuit .q path { fill: none; stroke: var(--accent); stroke-width: 4.5; stroke-linecap: butt; }
+.circuit .q polygon { fill: var(--accent); }
+.circuit .jn { fill: currentColor; opacity: .85; }
+.circuit .tm { fill: var(--bg); stroke: currentColor; stroke-width: 2.2; }
+.circuit .cv { font-family: var(--serif); font-style: italic; font-size: 34px; fill: currentColor; }
+.circuit .cs { font-family: var(--sans); font-style: normal; font-weight: 600; font-size: 17px; fill: var(--muted); }
+.circuit .cl { font-family: var(--sans); font-weight: 700; font-size: 20px; fill: currentColor; }
+.circuit .ct { font-family: var(--sans); font-weight: 600; font-size: 13px; letter-spacing: .1em; fill: var(--faint); }
+.circuit .pulse { fill: none; stroke: var(--accent); stroke-width: 3.4; stroke-linecap: round; stroke-dasharray: 3 24; animation: circuitFlow 1.6s linear infinite; }
+.circuit .pulse.t { stroke: var(--accent-2); animation-duration: 2s; }
+@keyframes circuitFlow { to { stroke-dashoffset: -54; } }
+.circuit figcaption { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--stroke); font-size: 14px; color: var(--muted); max-width: 70ch; }
+@media (prefers-reduced-motion: reduce) { .circuit .pulse { animation: none; stroke-dasharray: none; opacity: .0; } }
+
+.circuit-hint { display: none; margin-top: 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+@media (max-width: 760px) { .circuit-hint { display: block; } .circuit svg { min-width: 760px; } }
+.circuit-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }

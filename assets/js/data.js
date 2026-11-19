@@ -61,7 +61,7 @@ window.SITE = {
     "problem": "2026-11-19",
     "concepts": "2026-11-19",
     "requirements": "2026-11-18",
-    "architecture": "2026-11-18",
+    "architecture": "2026-11-19",
     "design": "2026-11-19",
     "integration": "2026-11-18",
     "validation": "2026-11-18",
@@ -651,7 +651,12 @@ window.SITE = {
         "chosen": "Analog path only",
         "reason": "The FPGA only generates control data, so no ADC is needed and the signal stays analog."
       }
-    ]
+    ],
+    "circuit": {
+      "show": true,
+      "intro": "One block of the whole system, drawn out: the op-amp variable gain stage. A JFET at its inverting input sets the gain, and a control stage fed from VControl drives that JFET's gate.",
+      "caption": "Signal path: Vin through Rp into the output stage, feedback through R2, load RL. Control path: VControl through R1 into the control op-amp, which drives the JFET gates."
+    }
   },
   "design": {
     "calcs": [
@@ -782,13 +787,7 @@ window.SITE = {
         "date": "2026-11-18"
       }
     ],
-    "media": [
-      {
-        "type": "image",
-        "src": "assets/img/amplifier-circuit.png",
-        "caption": "Amplifier circuit: a non-inverting op-amp stage (Vin through Rp, feedback R2, load RL) with a JFET at its inverting input, set by a control stage (VControl through R1, referenced to VRef)."
-      }
-    ],
+    "media": [],
     "bom": []
   },
   "courses": [

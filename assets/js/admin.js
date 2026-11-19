@@ -107,6 +107,7 @@
       { path: "architecture.controlPath", label: "Gain-control path (shown under the flow)", f: [T("name", "Name"), T("sub", "Description", { full: true })] },
       { path: "architecture.paths", label: "Signal paths", rows: [T("title", "Title", { full: true }), L("steps", "Steps (one per line)")], title: "title" },
       { path: "architecture", label: "Important note", f: [A("note", "Highlighted note")] },
+      { path: "architecture.circuit", label: "Gain stage circuit", f: [{ k: "show", l: "Show the circuit block", t: "bool", def: true, full: true, yes: "Show the Gain stage section" }, A("intro", "Introduction"), A("caption", "Caption under the circuit")] },
       { path: "architecture", label: "Diagram image", f: [IMG("diagram", "Block diagram image")] },
       { path: "architecture.blocks", label: "Blocks", rows: [T("name", "Block"), T("fr", "FR it serves"), T("input", "Input"), T("output", "Output")], title: "name" },
       { path: "architecture.hierarchy", label: "Design hierarchy", rows: [T("label", "Label (e.g. Primary design)"), A("text", "Description")], title: "label" },

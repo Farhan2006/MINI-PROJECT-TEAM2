@@ -225,6 +225,47 @@
       '<aside class="chain-detail glass ' + rv() + '" aria-live="polite"><div class="cd-top"><span class="cd-n"></span><span class="tag blue cd-grp"></span></div><h3 class="cd-title"></h3><p class="cd-sub"></p><canvas class="cd-viz" aria-hidden="true"></canvas><p class="cd-info"></p><ul class="cd-facts"></ul>' +
       '<div class="cd-actions"><a class="btn primary cd-link" href="#">Open page</a><button type="button" class="btn ghost cd-next">Next block →</button></div></aside></div>');
   }
+  /* the gain-stage circuit, drawn as theme-aware SVG (ink wires, orange JFETs, serif-italic variables) */
+  function circuitHTML(C) {
+    function zh(x1, y, x2) { var n = 6, w = (x2 - x1) / n, d = "M" + x1 + " " + y; for (var i = 0; i < n; i++) d += " L" + (x1 + w * (i + .5)).toFixed(1) + " " + (y + (i % 2 ? 9 : -9)); return d + " L" + x2 + " " + y; }
+    function zv(x, y1, y2) { var n = 6, h = (y2 - y1) / n, d = "M" + x + " " + y1; for (var i = 0; i < n; i++) d += " L" + (x + (i % 2 ? 9 : -9)) + " " + (y1 + h * (i + .5)).toFixed(1); return d + " L" + x + " " + y2; }
+    function gnd(x, y) { return '<path d="M' + x + " " + y + " V" + (y + 8) + " M" + (x - 13) + " " + (y + 8) + " H" + (x + 13) + " M" + (x - 8) + " " + (y + 14) + " H" + (x + 8) + " M" + (x - 3) + " " + (y + 20) + " H" + (x + 3) + '"/>'; }
+    function dot(x, y) { return '<circle class="jn" cx="' + x + '" cy="' + y + '" r="4.5"/>'; }
+    function tri(x, yt, yb, tip, minusY, plusY) {
+      return '<path class="op" d="M' + x + " " + yt + " V" + yb + " L" + tip[0] + " " + tip[1] + ' Z"/><path class="sg" d="M' + (x + 12) + " " + minusY + " h14 M" + (x + 12) + " " + plusY + " h14 M" + (x + 19) + " " + (plusY - 7) + ' v14"/>';
+    }
+    function V(x, y, name, sub, anchor) { return '<text class="cv" x="' + x + '" y="' + y + '"' + (anchor ? ' text-anchor="' + anchor + '"' : "") + ">" + name + (sub ? '<tspan class="cs" dy="6">' + sub + "</tspan>" : "") + "</text>"; }
+    function L(x, y, t, anchor) { return '<text class="cl" x="' + x + '" y="' + y + '"' + (anchor ? ' text-anchor="' + anchor + '"' : "") + ">" + t + "</text>"; }
+    var svg = '<svg viewBox="0 0 970 365" role="img" aria-label="Gain stage circuit: a non-inverting op-amp with a JFET at its inverting input, set by a control op-amp stage"><g transform="translate(142,12)">' +
+      /* wires and resistors */
+      '<g class="w">' +
+      '<path d="M0 185 H38"/><path d="' + zh(38, 185, 98) + '"/><path d="M98 185 H160 M120 185 V122 H135"/>' +                                    /* -VControl, R1 */
+      '<path d="M160 265 H130 V285"/>' + gnd(130, 285) +                                                                                            /* U1 + to ground */
+      '<path d="M265 225 H282 V93"/>' +                                                                                                              /* U1 output up to gate line */
+      '<path d="M149 93 H411"/>' +                                                                                                                   /* shared gate line */
+      '<path d="M135 64 H106 V24"/>' +                                                                                                               /* Q1 drain to VRef */
+      '<path d="M425 64 H490 V165 H530"/>' +                                                                                                         /* Q2 drain to node, down to U2 - */
+      '<path d="M425 122 H450 V150"/>' + gnd(450, 150) +                                                                                              /* Q2 source to ground */
+      '<path d="M490 64 V26 H540"/><path d="' + zh(540, 26, 620) + '"/><path d="M620 26 H652 V210"/>' +                                               /* R2 feedback */
+      '<path d="M360 255 H400"/><path d="' + zh(400, 255, 460) + '"/><path d="M460 255 H530"/>' +                                                    /* Vin, Rp */
+      '<path d="M640 210 H700 V232"/><path d="' + zv(700, 232, 298) + '"/><path d="M700 298 V318"/>' + gnd(700, 318) +                               /* output, RL */
+      '</g>' +
+      /* op-amps */
+      '<g class="o">' + tri(160, 160, 290, [265, 225], 185, 265) + tri(530, 135, 285, [640, 210], 165, 255) + '</g>' +
+      /* JFETs (orange) */
+      '<g class="q"><path d="M135 58 V128"/><path d="M135 64 h0 M135 122 h0"/><polygon points="139,93 149,87.5 149,98.5"/>' +
+      '<path d="M425 58 V128"/><polygon points="421,93 411,87.5 411,98.5"/></g>' +
+      /* junctions + terminals */
+      dot(282, 93) + dot(490, 64) + dot(652, 210) + dot(120, 185) + '<circle class="tm" cx="0" cy="185" r="5"/><circle class="tm" cx="106" cy="24" r="5"/><circle class="tm" cx="360" cy="255" r="5"/>' +
+      /* live signal pulses */
+      '<path class="pulse" d="M360 255 H530"/><path class="pulse" d="M640 210 H700"/><path class="pulse t" d="M265 225 H282 V93 H411"/><path class="pulse t" d="M0 185 H160"/>' +
+      /* labels */
+      V(-12, 196, "&minus;V", "Control", "end") + V(94, 14, "V", "Ref", "end") + V(346, 266, "V", "in", "end") + V(662, 186, "V", "o") +
+      L(68, 163, "R<tspan class='cs' dy='5'>1</tspan>", "middle") + L(580, 6, "R<tspan class='cs' dy='5'>2</tspan>", "middle") + L(430, 289, "R<tspan class='cs' dy='5'>p</tspan>", "middle") + L(724, 273, "R<tspan class='cs' dy='5'>L</tspan>") +
+      '<text class="ct" x="160" y="52">Q1</text><text class="ct" x="396" y="52">Q2</text><text class="ct" x="190" y="234">U1</text><text class="ct" x="562" y="214">U2</text>' +
+      "</g></svg>";
+    return '<figure class="circuit glass ' + rv() + '"><div class="circuit-scroll" tabindex="0" role="group" aria-label="Circuit diagram, scrollable">' + svg + "</div><p class=\"circuit-hint\">Swipe sideways to see the whole circuit</p>" + (C.caption ? "<figcaption>" + esc(C.caption) + "</figcaption>" : "") + "</figure>";
+  }
   function flowHTML(a) {
     if (!a.flow || !a.flow.length) return "";
     var nodes = a.flow.map(function (f, i) {
@@ -394,7 +435,8 @@
     var paths = (a.paths || []).length ? '<div class="grid g2" style="margin-top:14px">' + a.paths.map(function (p) { return '<div class="glass pad ' + rv() + '"><h3>' + esc(p.title) + '</h3><ol class="steps-ol">' + p.steps.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ol></div>"; }).join("") + "</div>" : "";
     var note = a.note ? '<div class="callout glass ' + rv() + '" style="margin-top:14px"><div class="big">Important</div><p>' + esc(a.note) + "</p></div>" : "";
     var hier = (a.hierarchy || []).length ? '<div class="grid g3">' + a.hierarchy.map(function (h, i) { return '<div class="glass pad hier ' + rv() + '"><span class="tag ' + (i ? "" : "good") + '">' + esc(h.label) + "</span><p>" + esc(h.text) + "</p></div>"; }).join("") + "</div>" : "";
-    return sec("System flow", "The analog signal path and the gain-control path.", flowHTML(a) + paths + note) +
+    var gs = a.circuit && a.circuit.show !== false ? sec("Gain <em>stage</em>", esc(a.circuit.intro || ""), circuitHTML(a.circuit), "gain-stage") : "";
+    return sec("System flow", "The analog signal path and the gain-control path.", flowHTML(a) + paths + note) + gs +
       sec("Block diagram", "", diag + (blocks ? '<div style="margin-top:16px">' + blocks + "</div>" : "")) +
       sec("Subsystem selection", "Alternatives considered for each block.", ch) + (hier ? sec("Design hierarchy", "", hier) : "") + decisionsFor("architecture");
   };
