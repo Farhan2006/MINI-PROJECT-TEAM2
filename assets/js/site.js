@@ -198,12 +198,13 @@
   function aboutHTML() {
     var A = S.about; if (!A) return "";
     var objs = (A.objectives || []).map(function (o, i) { return "<li><i>" + String(i + 1).padStart(2, "0") + "</i><span>" + esc(o) + "</span></li>"; }).join("");
-    var chips = function (arr) { return (arr || []).map(function (c) { return '<span class="chip">' + esc(c) + "</span>"; }).join(""); };
+    function row(label, arr) { return arr && arr.length ? '<div class="about-row"><dt>' + label + "</dt><dd>" + arr.map(function (x) { return '<span class="it">' + esc(x) + "</span>"; }).join(' <span class="sep">/</span> ') + "</dd></div>" : ""; }
+    var seen = (A.domain || []).map(function (x) { return String(x).toLowerCase(); });
+    var tech = (A.technologies || []).filter(function (x) { return seen.indexOf(String(x).toLowerCase()) < 0; });   /* each term shown once */
     return sec("About the <em>project</em>", esc(S.fullTitle || S.title),
-      '<div class="about"><div class="about-main glass pad ' + rv() + '"><span class="tag blue">Objective</span><p class="about-obj">' + esc(A.objective) + "</p>" +
-      (A.summary ? '<p class="muted about-sum">' + esc(A.summary) + "</p>" : "") + '<div class="chips">' + chips(A.domain) + "</div></div>" +
-      '<div class="about-goals ' + rv() + '"><h3>Technical objectives</h3><ol>' + objs + "</ol></div></div>" +
-      ((A.technologies || []).length ? '<div class="tech ' + rv() + '"><small>Technologies</small>' + chips(A.technologies) + "</div>" : ""));
+      '<div class="about"><p class="about-obj ' + rv() + '">' + esc(A.objective) + "</p>" +
+      '<div class="about-cols"><div class="about-side ' + rv() + '">' + (A.summary ? '<p class="about-sum">' + esc(A.summary) + "</p>" : "") + '<dl class="about-meta">' + row("Domain", A.domain) + row("Technologies", tech) + "</dl></div>" +
+      '<div class="about-goals ' + rv() + '"><h3>Technical objectives</h3><ol>' + objs + "</ol></div></div></div>");
   }
   /* interactive signal chain (home). Behaviour lives in motion.js */
   function chainHTML() {
@@ -479,13 +480,13 @@
     var i = 0;
     var menu = Object.keys(groups).map(function (g) {
       return "<div><h4>" + g + "</h4>" + groups[g].map(function (p) {
-        return '<a class="mi" style="--i:' + (i++) + '" href="' + p.file + '"><em>' + (p.num ? String(p.num).padStart(2, "0") : "·") + "</em>" + esc(p.num === 0 ? "Home" : p.short) + "</a>";
+        return '<a class="mi' + (p.id === cur ? " current" : "") + '" style="--i:' + (i++) + '" href="' + p.file + '"><em>' + (p.num ? String(p.num).padStart(2, "0") : "00") + "</em>" + esc(p.num === 0 ? "Home" : p.short) + "</a>";
       }).join("") + "</div>";
     }).join("");
     return '<header class="nav"><div class="nav-inner"><a class="brand" href="index.html"><span class="dot"></span>VDT Mini Project <small>Team ' + esc(S.teamNo) + '</small></a><nav class="nav-links">' + links + '</nav>' +
       '<button class="icon-btn" id="themeBtn" aria-label="Toggle theme"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>' +
       '<button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><span class="burger"><i></i><i></i></span></button></div></header>' +
-      '<div class="menu" id="menu"><div class="menu-inner">' + menu + "</div></div>";
+      '<div class="menu" id="menu"><div class="menu-inner">' + menu + '</div><div class="menu-foot"><span>EE-VDT · Team ' + esc(S.teamNo) + "</span><span>" + esc(S.school) + "</span></div></div>";
   }
 
   function pageHead(p) {

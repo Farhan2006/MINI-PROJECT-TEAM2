@@ -130,75 +130,68 @@
     });
   }
 
-  /* ---------- background: a living contour map. Iso-lines of a slowly moving field (marching squares),
-              drifting with scroll, rising into a hill around the pointer, rippling on click ---------- */
-  function contourField() {
+  /* ---------- background: engineering graph paper. A fine grid with major lines and edge ticks sits under
+              everything and slides slowly with scroll. The cells under your pointer light up and fade like a
+              trail; a click sends a square ripple of cells outward; a very faint scan band sweeps across. ---------- */
+  function gridField() {
     var c = doc.createElement("canvas"); c.id = "bgField"; c.setAttribute("aria-hidden", "true");
     var amb = doc.querySelector(".ambient"); doc.body.insertBefore(c, amb ? amb.nextSibling : doc.body.firstChild);
-    var ctx = c.getContext("2d"), W = 0, H = 0, dpr = 1, cell = 30, cols = 0, rows = 0, vals = null;
-    var m = { x: -9999, y: -9999, tx: -9999, ty: -9999, v: 0 }, lx = 0, ly = 0, sy = scrollY, ripples = [], running = true, last = 0, accent = "#f1501b", accAt = 0;
-    var LEVELS = [-1.5, -1.2, -.9, -.6, -.3, 0, .3, .6, .9, 1.2, 1.5], ACC = { "-.6": 1, "0.6": 1 };
-    function size() {
-      dpr = Math.min(devicePixelRatio || 1, 1.5); W = c.width = Math.round(innerWidth * dpr); H = c.height = Math.round(innerHeight * dpr);
-      cell = innerWidth < 700 ? 26 : 30; cols = Math.ceil(innerWidth / cell) + 1; rows = Math.ceil(innerHeight / cell) + 1; vals = new Float32Array((cols + 1) * (rows + 1));
-    }
+    var ctx = c.getContext("2d"), dpr = 1, vw = 0, vh = 0, cell = 32, PAR = .35;
+    var hits = {}, ripples = [], sy = scrollY, last = 0, running = true, accent = "#f1501b", accAt = 0, lastKey = "";
+    function size() { dpr = Math.min(devicePixelRatio || 1, 1.5); vw = innerWidth; vh = innerHeight; cell = vw < 700 ? 28 : 32; c.width = Math.round(vw * dpr); c.height = Math.round(vh * dpr); }
     size(); addEventListener("resize", size);
+    function cellAt(x, y) { return [Math.floor(x / cell), Math.floor((y + sy * PAR) / cell)]; }
     addEventListener("pointermove", function (e) {
-      m.tx = e.clientX; m.ty = e.clientY; if (m.x < -9000) { m.x = m.tx; m.y = m.ty; }
-      m.v = Math.min(1, m.v + Math.hypot(e.clientX - lx, e.clientY - ly) / 90); lx = e.clientX; ly = e.clientY;
+      var q = cellAt(e.clientX, e.clientY), k = q[0] + "," + q[1];
+      if (k !== lastKey) { lastKey = k; hits[k] = 1; }
     }, { passive: true });
-    doc.addEventListener("pointerdown", function (e) { ripples.push({ x: e.clientX, y: e.clientY, t0: performance.now() }); });
-    doc.addEventListener("pointerleave", function () { m.tx = m.ty = -9999; });
-    doc.addEventListener("visibilitychange", function () { running = !doc.hidden; if (running) requestAnimationFrame(frame); });
+    doc.addEventListener("pointerdown", function (e) { var q = cellAt(e.clientX, e.clientY); ripples.push({ i: q[0], j: q[1], t0: performance.now() }); });
+    doc.addEventListener("visibilitychange", function () { running = !doc.hidden; if (running) { last = 0; requestAnimationFrame(frame); } });
 
     function frame(now) {
       if (!running) return;
       if (!reduce) requestAnimationFrame(frame);
-      if (now - last < 33 && !reduce) return; last = now;
-      var t = now / 1000, dark = isDark();
+      var dt = Math.min(.05, (now - (last || now)) / 1000); last = now;
+      var dark = isDark(), ink = dark ? "246,245,241" : "19,19,19";
       if (now - accAt > 700) { accent = getComputedStyle(root).getPropertyValue("--accent").trim() || "#f1501b"; accAt = now; }
-      m.x += (m.tx - m.x) * .14; m.y += (m.ty - m.y) * .14; m.v *= .95; sy += (scrollY - sy) * .08;
-      ripples = ripples.filter(function (r) { return now - r.t0 < 1800; });
-      var vw = innerWidth, vh = innerHeight, sig = (110 + m.v * 60), inv = 1 / (2 * sig * sig), off = sy * .35;
-      for (var j = 0; j <= rows; j++) {
-        for (var i = 0; i <= cols; i++) {
-          var x = i * cell, y = j * cell, nx = x / vw * 3.2, ny = (y + off) / vh * 2.4;
-          var v = Math.sin(nx * 1.15 + t * .13) + Math.sin(ny * 1.35 - t * .1 + Math.sin(nx * .6)) + .75 * Math.sin((nx + ny) * 1.6 + t * .08) + .45 * Math.sin(nx * 2.7 - ny * 1.9 + t * .16);
-          var dx = x - m.x, dy = y - m.y, d2 = dx * dx + dy * dy;
-          if (d2 < 36 * sig * sig) v += 2.1 * Math.exp(-d2 * inv);
-          for (var k = 0; k < ripples.length; k++) {
-            var a = (now - ripples[k].t0) / 1800, R = a * 900, rx = x - ripples[k].x, ry = y - ripples[k].y, d = Math.sqrt(rx * rx + ry * ry);
-            v += 1.3 * Math.exp(-((d - R) * (d - R)) / (2 * 50 * 50)) * (1 - a);
-          }
-          vals[j * (cols + 1) + i] = v;
-        }
-      }
+      sy += (scrollY - sy) * .1;
+      var off = sy * PAR, j0 = Math.floor(off / cell), yOff = -(off - j0 * cell);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, vw, vh);
-      var ink = dark ? "246,245,241" : "19,19,19";
-      for (var li = 0; li < LEVELS.length; li++) {
-        var L = LEVELS[li], hot = !!ACC[String(L)];
-        ctx.beginPath();
-        for (var jj = 0; jj < rows; jj++) for (var ii = 0; ii < cols; ii++) {
-          var p = jj * (cols + 1) + ii, tl = vals[p], tr = vals[p + 1], br = vals[p + cols + 2], bl = vals[p + cols + 1];
-          var idx = (tl > L ? 8 : 0) | (tr > L ? 4 : 0) | (br > L ? 2 : 0) | (bl > L ? 1 : 0);
-          if (idx === 0 || idx === 15) continue;
-          var X = ii * cell, Y = jj * cell;
-          var tx = X + cell * (L - tl) / (tr - tl), ty = Y, rxp = X + cell, ryp = Y + cell * (L - tr) / (br - tr), bx = X + cell * (L - bl) / (br - bl), by = Y + cell, lxp = X, lyp = Y + cell * (L - tl) / (bl - tl);
-          switch (idx) {
-            case 1: case 14: ctx.moveTo(lxp, lyp); ctx.lineTo(bx, by); break;
-            case 2: case 13: ctx.moveTo(bx, by); ctx.lineTo(rxp, ryp); break;
-            case 3: case 12: ctx.moveTo(lxp, lyp); ctx.lineTo(rxp, ryp); break;
-            case 4: case 11: ctx.moveTo(tx, ty); ctx.lineTo(rxp, ryp); break;
-            case 5: ctx.moveTo(tx, ty); ctx.lineTo(rxp, ryp); ctx.moveTo(lxp, lyp); ctx.lineTo(bx, by); break;
-            case 6: case 9: ctx.moveTo(tx, ty); ctx.lineTo(bx, by); break;
-            case 7: case 8: ctx.moveTo(lxp, lyp); ctx.lineTo(tx, ty); break;
-            case 10: ctx.moveTo(lxp, lyp); ctx.lineTo(tx, ty); ctx.moveTo(bx, by); ctx.lineTo(rxp, ryp); break;
-          }
-        }
-        if (hot) { ctx.strokeStyle = accent; ctx.globalAlpha = dark ? .5 : .55; ctx.lineWidth = 1.4; } else { ctx.strokeStyle = "rgb(" + ink + ")"; ctx.globalAlpha = dark ? .13 : .14; ctx.lineWidth = 1; }
-        ctx.stroke();
+
+      /* lit cells: the pointer trail and click ripples */
+      function lit(i, j, v) {
+        var x = i * cell, y = j * cell - off; if (y > vh || y + cell < 0 || x > vw || x + cell < 0) return;
+        ctx.fillStyle = "rgba(241,80,27," + (v * (dark ? .2 : .17)) + ")"; ctx.fillRect(x + 1, y + 1, cell - 1, cell - 1);
+        ctx.strokeStyle = "rgba(241,80,27," + (v * .55) + ")"; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, cell, cell);
       }
-      ctx.globalAlpha = 1;
+      var decay = Math.pow(.12, dt);
+      Object.keys(hits).forEach(function (k) { hits[k] *= decay; if (hits[k] < .03) { delete hits[k]; return; } var p = k.split(","); lit(+p[0], +p[1], hits[k]); });
+      ripples = ripples.filter(function (r) { return now - r.t0 < 1300; });
+      ripples.forEach(function (r) {
+        var a = (now - r.t0) / 1300, R = Math.round(a * 13), v = (1 - a) * .9;
+        for (var di = -R; di <= R; di++) for (var dj = -R; dj <= R; dj++) if (Math.max(Math.abs(di), Math.abs(dj)) === R) lit(r.i + di, r.j + dj, v);
+      });
+
+      /* graph paper: minor lines, then major lines every fourth cell */
+      var i0 = 0, minor = new Path2D(), major = new Path2D();
+      for (var x = 0, i = 0; x <= vw; x += cell, i++) { (i % 4 === 0 ? major : minor).moveTo(x + .5, 0); (i % 4 === 0 ? major : minor).lineTo(x + .5, vh); }
+      for (var y = yOff, j = j0; y <= vh; y += cell, j++) { var P = (((j % 4) + 4) % 4 === 0) ? major : minor; P.moveTo(0, y + .5); P.lineTo(vw, y + .5); }
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(" + ink + "," + (dark ? .05 : .055) + ")"; ctx.stroke(minor);
+      ctx.strokeStyle = "rgba(" + ink + "," + (dark ? .10 : .11) + ")"; ctx.stroke(major);
+      /* edge ticks on the major lines, like a ruler */
+      ctx.strokeStyle = "rgba(" + ink + "," + (dark ? .30 : .32) + ")"; ctx.beginPath();
+      for (var xx = 0, ii = 0; xx <= vw; xx += cell, ii++) if (ii % 4 === 0) { ctx.moveTo(xx + .5, 0); ctx.lineTo(xx + .5, 9); }
+      for (var yy = yOff, jj = j0; yy <= vh; yy += cell, jj++) if ((((jj % 4) + 4) % 4) === 0) { ctx.moveTo(0, yy + .5); ctx.lineTo(9, yy + .5); }
+      ctx.stroke();
+
+      /* faint scan band, like an oscilloscope trigger sweeping across */
+      if (!reduce) {
+        var sx = ((now / 1000) / 18 % 1) * (vw + 300) - 150, gr = ctx.createLinearGradient(sx - 150, 0, sx + 150, 0);
+        gr.addColorStop(0, "rgba(241,80,27,0)"); gr.addColorStop(.85, "rgba(241,80,27," + (dark ? .05 : .045) + ")"); gr.addColorStop(1, "rgba(241,80,27,0)");
+        ctx.fillStyle = gr; ctx.fillRect(sx - 150, 0, 300, vh);
+        ctx.fillStyle = "rgba(241,80,27," + (dark ? .22 : .2) + ")"; ctx.fillRect(sx + 127, 0, 1, vh);
+      }
     }
     requestAnimationFrame(frame);
   }
@@ -332,7 +325,7 @@
   }
 
   function start() {
-    headings(); heroWave(); anatomy(); tilt(); countUp(); scrollBar(); footWord(); sectionLines(); contourField(); ring(); chain();
+    headings(); heroWave(); anatomy(); tilt(); countUp(); scrollBar(); footWord(); sectionLines(); gridField(); ring(); chain();
   }
   wipeLeave();
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", function () { start(); wipeArrive(); });

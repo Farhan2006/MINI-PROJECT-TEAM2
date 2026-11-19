@@ -8,7 +8,7 @@ window.SITE = {
   "artefact": "Artefact 1",
   "teamNo": "02",
   "teamPhoto": "",
-  "showTeamPhoto": true,
+  "showTeamPhoto": false,
   "members": [
     {
       "name": "Swaroop T",
