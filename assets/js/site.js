@@ -192,8 +192,7 @@
         '<div class="steplist">' + list + "</div></div>") +
       sec("Latest update", "", '<div class="callout glass ' + rv() + '"><div class="big">' + fmtDate(S.latest.date) + "</div><p>" + esc(S.latest.text) + "</p></div>" +
         (nb ? '<div class="callout glass ' + rv() + '" style="margin-top:12px"><div class="big">Notebook · ' + fmtDate(nb.date) + "</div><p>" + esc(nb.objective) + "</p></div>" : "")) +
-      sec("The portfolio", "Fifteen pages, in the order the project happened. Pages 2 to 10 follow the sixteen-step design chain.", '<div class="grid g4">' + cards + "</div>") +
-      sec("The team", "", teamCards() + '<h3 style="margin:34px 0 14px" class="reveal">Faculty guides</h3>' + facultyCards());
+      sec("The portfolio", "Fifteen pages, in the order the project happened. Pages 2 to 10 follow the sixteen-step design chain.", '<div class="grid g4">' + cards + "</div>");
   };
 
   function ul(list) { return "<ul>" + (list || []).map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"; }
