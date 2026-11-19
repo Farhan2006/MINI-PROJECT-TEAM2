@@ -401,7 +401,7 @@
     });
     var top = h("header", { class: "cp-top" }, [
       h("div", { class: "cp-brand" }, ["Admin ", h("em", { text: "console" })]), stateEl,
-      h("a", { class: "cp-btn", href: "index.html", target: "_blank", rel: "noopener", text: "Preview site ↗" }),
+      h("a", { class: "cp-btn", href: "index.html?preview", target: "_blank", rel: "noopener", text: "Preview site ↗" }),
       h("button", { class: "cp-btn pri", type: "button", text: "Publish…", onclick: function () { render("publish"); } })
     ]);
     main = h("main", { class: "cp-main" });

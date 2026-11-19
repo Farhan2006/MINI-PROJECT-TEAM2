@@ -4,7 +4,9 @@
   /* Admin working copy (set from admin.html in THIS browser only) overrides data.js for preview. */
   try {
     var ov = localStorage.getItem("vdt_site_override");
-    if (ov && !/[?&]nooverride/.test(location.search)) { var parsed = JSON.parse(ov); if (parsed && typeof parsed === "object") window.SITE = Object.assign({}, window.SITE, parsed); }
+    if (/[?&]preview/.test(location.search)) sessionStorage.setItem("vdt_preview", "1");
+    if (/[?&]nooverride/.test(location.search)) sessionStorage.removeItem("vdt_preview");
+    if (ov && sessionStorage.getItem("vdt_preview") === "1") { var parsed = JSON.parse(ov); if (parsed && typeof parsed === "object") window.SITE = Object.assign({}, window.SITE, parsed); }
   } catch (e) {}
   var S = window.SITE;
   /* Headline: stacked uppercase display type with one serif-italic word and a blinking underscore. */
@@ -585,14 +587,6 @@
     });
     var ft = document.querySelector("footer");
     if (ft) ft.addEventListener("click", function (e) { if (e.detail === 3) location.href = "/admin"; });
-
-    /* a small "preview" ribbon when this browser is showing unpublished admin edits */
-    try {
-      if (localStorage.getItem("vdt_site_override") && !/[?&]nooverride/.test(location.search)) {
-        var rb = document.createElement("a"); rb.className = "ribbon"; rb.href = "/admin"; rb.textContent = "Previewing unpublished edits · open admin";
-        document.body.appendChild(rb);
-      }
-    } catch (e) {}
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
