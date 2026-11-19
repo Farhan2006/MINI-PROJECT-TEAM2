@@ -72,7 +72,7 @@
       { path: "problem", label: "Need statement", f: [A("need", "What is required, in measurable terms, without naming a circuit")] },
       { path: "problem.inputs", label: "Design inputs", rows: [T("parameter", "Parameter"), T("value", "Value"), T("note", "Note", { full: true })], title: "parameter" },
       { path: "problem.background", label: "Background study", rows: [T("title", "Source name"), S("type", "Type", ["datasheet", "app note", "reference design"]), A("learned", "What we learned"), T("link", "Link", { full: true })], title: "title" },
-      { path: "problem.candidateFRs", label: "Candidate functional requirements", rows: [T("id", "ID (e.g. FR-A)"), T("text", "Requirement", { full: true })], title: "id" },
+      { path: "problem.candidateFRs", label: "Candidate functional requirements", rows: [T("id", "ID (e.g. FR-01)"), T("text", "Requirement", { full: true }), A("acceptance", "Acceptance condition")], title: "id" },
       { path: "problem.unknowns", label: "Still unknown", strings: true, hint: "One item per line." }
     ] },
     { g: "Design chain", id: "concepts", n: "3", title: "Concept choices", sub: "Criteria, alternatives, scoring and the chosen concept.", blocks: [
@@ -80,7 +80,22 @@
       { path: "concepts.alternatives", label: "Alternatives", rows: [T("name", "Concept name"), IMG("sketch", "Sketch image"), A("summary", "Summary"), A("rejectedBecause", "Set aside because"), L("pros", "Advantages (one per line)"), L("cons", "Limitations (one per line)"), { k: "scores", l: "Scores per criterion", t: "scores" }], title: "name" },
       { path: "concepts", label: "Choice", f: [T("chosen", "Chosen concept", { full: true }), A("reason", "Reason")] },
       { path: "concepts.scopeIn", label: "In scope", strings: true, hint: "One item per line." },
-      { path: "concepts.scopeOut", label: "Out of scope", strings: true, hint: "One item per line." }
+      { path: "concepts.scopeOut", label: "Out of scope", strings: true, hint: "One item per line." },
+      { path: "signalSelection", label: "Signal selection", f: [A("intro", "Introduction"), T("signals", "Signals scored (comma-separated, in column order)", { t: "csv", full: true }), T("scale", "Scoring note", { full: true }), T("selectedLabel", "Selection label"), T("selected", "Selected signal", { full: true }), L("justification", "Justification (one paragraph per line)")] },
+      { path: "signalSelection.candidates", label: "Candidate signals", rows: [T("signal", "Signal"), T("characteristics", "Typical characteristics", { full: true }), T("application", "Application", { full: true })], title: "signal" },
+      { path: "signalSelection.criteria", label: "Signal selection matrix", hint: "Weights are percentages. Scores: one number per signal, in the same order, comma-separated. Totals are calculated.", rows: [T("name", "Criterion"), N("weight", "Weight %"), { k: "scores", l: "Scores (comma-separated numbers)", t: "nums", full: true }], title: "name" },
+      { path: "sensors", label: "Sensor selection", f: [A("intro", "Introduction"), A("statusNote", "Status note")] },
+      { path: "sensors.candidates", label: "Candidate sensors", rows: [T("name", "Sensor"), IMG("image", "Photo"), A("text", "Description")], title: "name" },
+      { path: "sensors.compare", label: "Sensor comparison table", f: [T("heads", "Column headings (comma-separated)", { t: "csv", full: true }), A("note", "Note under the table")] },
+      { path: "sensors.compare.rows", label: "Comparison rows", hint: "The two value columns match the column headings above (SS49E, strain gauge).", rows: [T("parameter", "Parameter"), T("v1", "Column 2 value", { full: true }), T("v2", "Column 3 value", { full: true })], title: "parameter" },
+      { path: "sensors", label: "SS49E design data", f: [T("specTitle", "Table title", { full: true }), T("specBadge", "Badge (optional)", { full: true })] },
+      { path: "sensors.spec", label: "SS49E parameters", rows: [T("parameter", "Parameter"), T("value", "Value")], title: "parameter" },
+      { path: "sensors.conditioning", label: "Sensor conditioning note", f: [T("title", "Title", { full: true }), A("intro", "Introduction"), T("equation", "Equation", { full: true })] },
+      { path: "sensors.conditioning.terms", label: "Conditioning terms", rows: [T("term", "Term"), A("text", "Explanation")], title: "term" },
+      { path: "sensors.strain", label: "Strain gauge data", f: [T("title", "Title", { full: true }), T("note", "Placeholder text while empty", { full: true })] },
+      { path: "sensors.strain.rows", label: "Strain gauge parameters", hint: "Add rows here when the strain gauge data is ready.", rows: [T("parameter", "Parameter"), T("value", "Value")], title: "parameter" },
+      { path: "controlVoltage", label: "Control voltage generation", f: [A("intro", "Introduction")] },
+      { path: "controlVoltage.alternatives", label: "Control voltage alternatives", hint: "Leave the name empty to show a placeholder.", rows: [T("name", "Name"), A("summary", "Summary"), T("flow", "Signal path (comma-separated, e.g. FPGA, PWM, RC filter, Vctrl)", { t: "csv", full: true }), S("viz", "Mini diagram", ["", "pwm", "steps"]), L("pros", "Advantages (one per line)"), L("cons", "Limitations (one per line)")], title: "name" }
     ] },
     { g: "Design chain", id: "requirements", n: "4", title: "Functional requirements", sub: "The FR table with prediction vs measurement, and its change history.", blocks: [
       { f: [D("frFrozen", "Date the FR table was frozen")], label: "Freeze" },
@@ -155,7 +170,7 @@
   /* ---------- field renderers ---------- */
   function defFor(cols) {
     var o = {};
-    cols.forEach(function (c) { o[c.k] = c.t === "num" ? 0 : c.t === "bool" ? !!c.def : c.t === "sel" ? c.o[0] : c.t === "rows" || c.t === "csv" || c.t === "lines" ? [] : c.t === "scores" ? {} : ""; });
+    cols.forEach(function (c) { o[c.k] = c.t === "num" ? 0 : c.t === "bool" ? !!c.def : c.t === "sel" ? c.o[0] : c.t === "rows" || c.t === "csv" || c.t === "lines" || c.t === "nums" ? [] : c.t === "scores" ? {} : ""; });
     return o;
   }
   /* ---- images: resized in the browser, kept as data URLs until published ---- */
@@ -195,6 +210,11 @@
   }
   function fieldEl(c, obj, rerender) {
     if (c.t === "image") return imageEl(c, obj);
+    if (c.t === "nums") {
+      var nw = h("div", { class: "cp-f full" }, [h("label", { text: c.l })]);
+      var nin = h("input", { type: "text", oninput: function () { obj[c.k] = nin.value.split(",").map(function (x) { return x.trim(); }).filter(function (x) { return x !== ""; }).map(Number); changed(); } });
+      nin.value = (obj[c.k] || []).join(", "); nw.appendChild(nin); return nw;
+    }
     if (c.t === "lines") {
       var lw = h("div", { class: "cp-f full" }, [h("label", { text: c.l })]);
       var lta = h("textarea", { style: "min-height:110px", oninput: function () { obj[c.k] = lta.value.split("\n").map(function (x) { return x.trim(); }).filter(Boolean); changed(); } });

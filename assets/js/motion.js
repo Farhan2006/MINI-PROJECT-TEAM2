@@ -130,69 +130,58 @@
     });
   }
 
-  /* ---------- background: engineering graph paper. A fine grid with major lines and edge ticks sits under
-              everything and slides slowly with scroll. The cells under your pointer light up and fade like a
-              trail; a click sends a square ripple of cells outward; a very faint scan band sweeps across. ---------- */
-  function gridField() {
+  /* ---------- background: phosphor oscilloscope. Two big Lissajous figures draw themselves with glowing, fading
+              trails, like a scope screen. The pointer retunes the frequency ratio (move down the page to step
+              through 3:2, 5:4, 3:4 ...), a click jumps to the next ratio, and scrolling slides the figures. ---------- */
+  function phosphorField() {
     var c = doc.createElement("canvas"); c.id = "bgField"; c.setAttribute("aria-hidden", "true");
-    var amb = doc.querySelector(".ambient"); doc.body.insertBefore(c, amb ? amb.nextSibling : doc.body.firstChild);
-    var ctx = c.getContext("2d"), dpr = 1, vw = 0, vh = 0, cell = 32, PAR = .35;
-    var hits = {}, ripples = [], sy = scrollY, last = 0, running = true, accent = "#f1501b", accAt = 0, lastKey = "";
-    function size() { dpr = Math.min(devicePixelRatio || 1, 1.5); vw = innerWidth; vh = innerHeight; cell = vw < 700 ? 28 : 32; c.width = Math.round(vw * dpr); c.height = Math.round(vh * dpr); }
+    var c2 = doc.createElement("canvas"); c2.id = "bgField2"; c2.setAttribute("aria-hidden", "true");
+    var amb = doc.querySelector(".ambient"); doc.body.insertBefore(c2, amb ? amb.nextSibling : doc.body.firstChild); doc.body.insertBefore(c, amb ? amb.nextSibling : doc.body.firstChild);
+    var cvs = [c, c2], ctxs = [c.getContext("2d"), c2.getContext("2d")], dpr = 1, vw = 0, vh = 0, last = 0, running = true, sy = scrollY, accent = "#f1501b", accAt = 0, tt = 0;
+    var RATIOS = [[3, 2], [5, 4], [3, 4], [5, 6], [2, 1], [7, 6]], pick = 0, auto = true;
+    var F = [
+      { cx: .86, cy: .30, s: .30, a: 3, b: 2, ta: 3, tb: 2, d: 0, hot: true, w: 1 },
+      { cx: .09, cy: .78, s: .22, a: 5, b: 4, ta: 5, tb: 4, d: 1.2, hot: false, w: -1 }
+    ];
+    var m = { y: .5, ty: .5, has: false };
+    function size() { dpr = Math.min(devicePixelRatio || 1, 1.5); vw = innerWidth; vh = innerHeight; cvs.forEach(function (cv, i) { cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr); ctxs[i].setTransform(dpr, 0, 0, dpr, 0, 0); ctxs[i].clearRect(0, 0, vw, vh); }); }
     size(); addEventListener("resize", size);
-    function cellAt(x, y) { return [Math.floor(x / cell), Math.floor((y + sy * PAR) / cell)]; }
-    addEventListener("pointermove", function (e) {
-      var q = cellAt(e.clientX, e.clientY), k = q[0] + "," + q[1];
-      if (k !== lastKey) { lastKey = k; hits[k] = 1; }
-    }, { passive: true });
-    doc.addEventListener("pointerdown", function (e) { var q = cellAt(e.clientX, e.clientY); ripples.push({ i: q[0], j: q[1], t0: performance.now() }); });
+    addEventListener("pointermove", function (e) { m.ty = clamp(e.clientY / innerHeight, 0, 1); m.has = true; auto = false; setTarget(Math.min(RATIOS.length - 1, Math.floor(m.ty * RATIOS.length))); }, { passive: true });
+    doc.addEventListener("pointerdown", function () { setTarget((pick + 1) % RATIOS.length); });
     doc.addEventListener("visibilitychange", function () { running = !doc.hidden; if (running) { last = 0; requestAnimationFrame(frame); } });
-
+    function setTarget(i) { pick = i; F[0].ta = RATIOS[i][0]; F[0].tb = RATIOS[i][1]; F[1].ta = RATIOS[(i + 2) % RATIOS.length][0]; F[1].tb = RATIOS[(i + 2) % RATIOS.length][1]; }
+    function pt(f, t, out) {
+      var R = Math.min(vw, vh) * f.s, cx = f.cx * vw, cy = f.cy * vh - sy * .05;
+      out[0] = cx + R * Math.sin(f.a * t + f.d); out[1] = cy + R * Math.sin(f.b * t);
+    }
+    function drawStatic() {
+      var o = [0, 0], dark = isDark();
+      F.forEach(function (f, fi) { var ctx = ctxs[fi]; ctx.clearRect(0, 0, vw, vh); ctx.beginPath(); for (var i = 0; i <= 600; i++) { pt(f, i / 600 * 6.2832, o); i ? ctx.lineTo(o[0], o[1]) : ctx.moveTo(o[0], o[1]); } ctx.strokeStyle = f.hot ? accent : "rgb(" + (dark ? "246,245,241" : "19,19,19") + ")"; ctx.lineWidth = 1.4; ctx.stroke(); });
+    }
     function frame(now) {
       if (!running) return;
       if (!reduce) requestAnimationFrame(frame);
-      var dt = Math.min(.05, (now - (last || now)) / 1000); last = now;
-      var dark = isDark(), ink = dark ? "246,245,241" : "19,19,19";
+      var dt = Math.min(.05, (now - (last || now)) / 1000); last = now; var dark = isDark();
       if (now - accAt > 700) { accent = getComputedStyle(root).getPropertyValue("--accent").trim() || "#f1501b"; accAt = now; }
-      sy += (scrollY - sy) * .1;
-      var off = sy * PAR, j0 = Math.floor(off / cell), yOff = -(off - j0 * cell);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, vw, vh);
-
-      /* lit cells: the pointer trail and click ripples */
-      function lit(i, j, v) {
-        var x = i * cell, y = j * cell - off; if (y > vh || y + cell < 0 || x > vw || x + cell < 0) return;
-        ctx.fillStyle = "rgba(241,80,27," + (v * (dark ? .2 : .17)) + ")"; ctx.fillRect(x + 1, y + 1, cell - 1, cell - 1);
-        ctx.strokeStyle = "rgba(241,80,27," + (v * .55) + ")"; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, cell, cell);
-      }
-      var decay = Math.pow(.12, dt);
-      Object.keys(hits).forEach(function (k) { hits[k] *= decay; if (hits[k] < .03) { delete hits[k]; return; } var p = k.split(","); lit(+p[0], +p[1], hits[k]); });
-      ripples = ripples.filter(function (r) { return now - r.t0 < 1300; });
-      ripples.forEach(function (r) {
-        var a = (now - r.t0) / 1300, R = Math.round(a * 13), v = (1 - a) * .9;
-        for (var di = -R; di <= R; di++) for (var dj = -R; dj <= R; dj++) if (Math.max(Math.abs(di), Math.abs(dj)) === R) lit(r.i + di, r.j + dj, v);
+      sy += (scrollY - sy) * .08;
+      if (auto && now % 9000 < dt * 1000) setTarget((pick + 1) % RATIOS.length);
+      /* fade the old trail (destination-out keeps the canvas transparent, so the paper shows through) */
+      var fade = (1 - Math.pow(.972, dt * 60)).toFixed(4);
+      ctxs.forEach(function (cx) { cx.globalCompositeOperation = "destination-out"; cx.fillStyle = "rgba(0,0,0," + fade + ")"; cx.fillRect(0, 0, vw, vh); cx.globalCompositeOperation = "source-over"; });
+      var steps = Math.max(5, Math.ceil(dt * 700)), dtt = dt * .85 / steps, o = [0, 0], p = [0, 0];
+      F.forEach(function (f, fi) {
+        var ctx = ctxs[fi]; ctx.lineCap = "round"; ctx.lineJoin = "round";
+        f.a += (f.ta - f.a) * Math.min(1, dt * 1.4); f.b += (f.tb - f.b) * Math.min(1, dt * 1.4); f.d += dt * .18 * f.w;
+        /* continue from the exact end of the last segment, so the trail stays one unbroken line while the ratio morphs */
+        ctx.beginPath(); if (f.px == null) { pt(f, tt, p); f.px = p[0]; f.py = p[1]; } ctx.moveTo(f.px, f.py);
+        for (var i = 1; i <= steps; i++) { pt(f, tt + dtt * i, o); ctx.lineTo(o[0], o[1]); }
+        f.px = o[0]; f.py = o[1];
+        ctx.strokeStyle = f.hot ? accent : "rgb(" + (dark ? "246,245,241" : "19,19,19") + ")";
+        ctx.lineWidth = f.hot ? 1.8 : 1.4; ctx.stroke();
       });
-
-      /* graph paper: minor lines, then major lines every fourth cell */
-      var i0 = 0, minor = new Path2D(), major = new Path2D();
-      for (var x = 0, i = 0; x <= vw; x += cell, i++) { (i % 4 === 0 ? major : minor).moveTo(x + .5, 0); (i % 4 === 0 ? major : minor).lineTo(x + .5, vh); }
-      for (var y = yOff, j = j0; y <= vh; y += cell, j++) { var P = (((j % 4) + 4) % 4 === 0) ? major : minor; P.moveTo(0, y + .5); P.lineTo(vw, y + .5); }
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(" + ink + "," + (dark ? .05 : .055) + ")"; ctx.stroke(minor);
-      ctx.strokeStyle = "rgba(" + ink + "," + (dark ? .10 : .11) + ")"; ctx.stroke(major);
-      /* edge ticks on the major lines, like a ruler */
-      ctx.strokeStyle = "rgba(" + ink + "," + (dark ? .30 : .32) + ")"; ctx.beginPath();
-      for (var xx = 0, ii = 0; xx <= vw; xx += cell, ii++) if (ii % 4 === 0) { ctx.moveTo(xx + .5, 0); ctx.lineTo(xx + .5, 9); }
-      for (var yy = yOff, jj = j0; yy <= vh; yy += cell, jj++) if ((((jj % 4) + 4) % 4) === 0) { ctx.moveTo(0, yy + .5); ctx.lineTo(9, yy + .5); }
-      ctx.stroke();
-
-      /* faint scan band, like an oscilloscope trigger sweeping across */
-      if (!reduce) {
-        var sx = ((now / 1000) / 18 % 1) * (vw + 300) - 150, gr = ctx.createLinearGradient(sx - 150, 0, sx + 150, 0);
-        gr.addColorStop(0, "rgba(241,80,27,0)"); gr.addColorStop(.85, "rgba(241,80,27," + (dark ? .05 : .045) + ")"); gr.addColorStop(1, "rgba(241,80,27,0)");
-        ctx.fillStyle = gr; ctx.fillRect(sx - 150, 0, 300, vh);
-        ctx.fillStyle = "rgba(241,80,27," + (dark ? .22 : .2) + ")"; ctx.fillRect(sx + 127, 0, 1, vh);
-      }
+      tt += dt * .85;
     }
+    if (reduce) { drawStatic(); return; }
     requestAnimationFrame(frame);
   }
 
@@ -325,7 +314,7 @@
   }
 
   function start() {
-    headings(); heroWave(); anatomy(); tilt(); countUp(); scrollBar(); footWord(); sectionLines(); gridField(); ring(); chain();
+    headings(); heroWave(); anatomy(); countUp(); scrollBar(); footWord(); sectionLines(); phosphorField(); ring(); chain();
   }
   wipeLeave();
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", function () { start(); wipeArrive(); });

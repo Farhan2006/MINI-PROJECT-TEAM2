@@ -94,12 +94,12 @@ h1 em { display: inline-block; }
 .pcard.reveal.in, .person.reveal.in, .stat.reveal.in, .dcard.reveal.in { transform: none; }
 .pcard.reveal.in.tilt, .person.reveal.in.tilt { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px); transition: transform .12s linear, border-color .3s, background-color .3s; }
 .pcard .n span:first-child { transition: transform .5s var(--spring); }
-.pcard:hover .n span:first-child { transform: translateX(6px); }
+@media (hover: hover) and (pointer: fine) { .pcard:hover .n span:first-child { transform: translateX(6px); } }
 .pcard h3, .pager b { transition: color .3s, transform .5s var(--spring); }
-.pcard:hover h3 { transform: translateX(6px); color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .pcard:hover h3 { transform: translateX(6px); color: var(--accent); } }
 .person .photo { position: relative; }
 .person .photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--accent) 28%, transparent)); opacity: 0; transition: opacity .5s; }
-.person:hover .photo::after { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .person:hover .photo::after { opacity: 1; } }
 .btn { position: relative; overflow: hidden; }
 .btn.primary::after { content: ""; position: absolute; top: 0; bottom: 0; left: -70%; width: 40%; transform: skewX(-20deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: shineBtn 5s ease-in-out 1.6s infinite; }
 @keyframes shineBtn { 0% { left: -70%; } 28%, 100% { left: 150%; } }
@@ -112,7 +112,7 @@ footer { position: relative; }
 .foot-word span { display: inline-block; transform: translateY(105%); transition: transform 1.2s cubic-bezier(.2, .8, .2, 1), color .5s, -webkit-text-stroke-color .5s; }
 .foot-word span:nth-child(2) { transition-delay: .08s; } .foot-word span:nth-child(3) { transition-delay: .16s; }
 .foot-word.in span { transform: none; }
-.foot-word:hover span { color: var(--accent); -webkit-text-stroke-color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .foot-word:hover span { color: var(--accent); -webkit-text-stroke-color: var(--accent); } }
 .foot-word em { font-family: var(--serif); font-style: italic; font-weight: 400; text-transform: none; }
 
 /* ---------- page transition: iris from the click point, with the destination title card ---------- */
@@ -161,11 +161,11 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
 
 /* ---------- small hover polish ---------- */
 .pc li { transition: padding-left .4s var(--spring), color .3s; }
-.pc li:hover { padding-left: 26px; color: var(--fg); }
+@media (hover: hover) and (pointer: fine) { .pc li:hover { padding-left: 26px; color: var(--fg); } }
 .about-goals li { transition: padding-left .4s var(--spring); }
-.about-goals li:hover { padding-left: 8px; }
+@media (hover: hover) and (pointer: fine) { .about-goals li:hover { padding-left: 8px; } }
 .tech .chip { transition: transform .5s var(--spring), background-color .3s, color .3s, border-color .3s; }
-.tech .chip:hover { transform: translateY(-3px) rotate(-1.5deg); background: var(--accent); color: #fff; border-color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .tech .chip:hover { transform: translateY(-3px) rotate(-1.5deg); background: var(--accent); color: #fff; border-color: var(--accent); } }
 
 /* ---------- pointer: a small dot; a soft ring appears only over things you can click ---------- */
 .pring, .pdot { position: fixed; left: 0; top: 0; z-index: 350; pointer-events: none; opacity: 0; transition: opacity .3s; will-change: transform; }
@@ -186,7 +186,7 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
 .cblock { box-sizing: border-box; width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; position: relative; overflow: hidden;
   display: grid; grid-template-columns: auto 1fr 128px; gap: 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--stroke-strong); border-radius: 14px;
   background: color-mix(in srgb, var(--bg) 55%, transparent); transition: transform .5s var(--spring), background-color .3s, color .3s, border-color .3s; }
-.cblock:hover { transform: translateY(-3px); border-color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .cblock:hover { transform: translateY(-3px); border-color: var(--accent); } }
 .cblock:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .cb-n { font-size: 11px; font-weight: 600; letter-spacing: .1em; color: var(--accent); position: relative; }
 .cb-t { position: relative; min-width: 0; }
@@ -283,3 +283,22 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
 @media (max-width: 860px) { .anat-stage { overflow-x: clip; } }
 /* the graph paper replaces the old hairline columns */
 .ambient::before { display: none; }
+
+/* ---------- Concepts page motion (transform and opacity only) ---------- */
+.pwm-run { animation: pwmRun 1.6s linear infinite; }
+@keyframes pwmRun { to { transform: translateX(-40px); } }
+.cv-viz .lit rect { animation: stepLit 4s var(--ease-out) infinite; animation-delay: calc(var(--i) * .5s); }
+@keyframes stepLit { 0%, 12% { opacity: .22; } 20%, 100% { opacity: 0; } }
+.cblock:active, .pager a:active, .pcard:active, .fnode:active { transform: scale(.985); }
+@media (prefers-reduced-motion: reduce) {
+  .pwm-run, .cv-viz .lit rect { animation: none !important; }
+  .bar-t i { transition: none !important; transform: scaleX(var(--v)) !important; }
+}
+
+/* phosphor scope: each figure is its own layer; brightness lives here so trail joints never double up */
+#bgField2 { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+#bgField { opacity: .6; }
+#bgField2 { opacity: .34; }
+:root[data-theme="dark"] #bgField { opacity: .55; }
+:root[data-theme="dark"] #bgField2 { opacity: .3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #bgField { opacity: .55; } :root:not([data-theme="light"]) #bgField2 { opacity: .3; } }

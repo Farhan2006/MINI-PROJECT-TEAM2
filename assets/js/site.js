@@ -74,9 +74,9 @@
   /* ---------------- helpers ---------------- */
   var d = 0;
   function rv(extra) { d = (d + 1) % 8; return 'reveal' + (extra ? " " + extra : "") + '" style="--d:' + d; }
-  function sec(title, sub, body) {
+  function sec(title, sub, body, id) {
     d = 0;
-    return '<section class="section"><div class="sec-head reveal"><h2>' + title + "</h2>" + (sub ? "<p>" + sub + "</p>" : "") + "</div>" + body + "</section>";
+    return '<section class="section"' + (id ? ' id="' + id + '"' : "") + '><div class="sec-head reveal"><h2>' + title + "</h2>" + (sub ? "<p>" + sub + "</p>" : "") + "</div>" + body + "</section>";
   }
   function empty(title, hint) {
     return '<div class="empty reveal"><b>' + esc(title) + "</b><span>" + hint + "</span></div>";
@@ -281,7 +281,7 @@
       return '<div class="glass pad spot ' + rv() + '"><span class="tag blue">' + esc(b.type) + "</span><h3 style='margin:10px 0 6px'>" + (b.link ? '<a href="' + esc(b.link) + '">' + esc(b.title) + "</a>" : esc(b.title)) + '</h3><p class="muted">' + esc(b.learned) + "</p></div>";
     }).join("") + "</div>" : empty("Background study pending", "List each datasheet, application note or reference design studied, and what the team learned from it.");
     var frs = p.candidateFRs.length ? '<div class="grid g3">' + p.candidateFRs.map(function (f) {
-      return '<div class="glass pad ' + rv() + '"><span class="tag">' + esc(f.id) + "</span><p style='margin-top:10px'>" + esc(f.text) + "</p></div>";
+      return '<div class="glass pad ' + rv() + '"><span class="tag">' + esc(f.id) + "</span><p style='margin-top:10px'>" + esc(f.text) + "</p>" + (f.acceptance ? '<p class="accept"><small>Acceptance</small>' + esc(f.acceptance) + "</p>" : "") + "</div>";
     }).join("") + "</div>" : empty("Three candidate FRs needed for Review 1", "Draft requirements only — they are frozen at Review 3.");
     var unk = p.unknowns.length ? '<div class="glass pad ' + rv() + '"><ul style="padding-left:18px">' + p.unknowns.map(function (u) { return "<li>" + esc(u) + "</li>"; }).join("") + "</ul></div>" : "";
     return sec("Need statement", "", need) +
@@ -290,6 +290,57 @@
       sec("Candidate functional requirements", "Three drafts to carry into the concept stage.", frs) +
       (unk ? sec("Still unknown", "", unk) : "") + decisionsFor("problem");
   };
+
+  function signalHTML() {
+    var Q = S.signalSelection; if (!Q) return "";
+    var cand = (Q.candidates || []).length ? table(["Signal", "Typical characteristics", "Application"], Q.candidates.map(function (c) { return R(["<b>" + esc(c.signal) + "</b>", esc(c.characteristics), esc(c.application)]); })) : "";
+    var sig = Q.signals || [], tot = sig.map(function (_, i) { return (Q.criteria || []).reduce(function (t, c) { return t + (Number(c.weight) || 0) / 100 * (Number((c.scores || [])[i]) || 0); }, 0); });
+    var best = Math.max.apply(null, tot.concat([0]));
+    var wsum = (Q.criteria || []).reduce(function (t, c) { return t + (Number(c.weight) || 0); }, 0);
+    var rows = (Q.criteria || []).map(function (c) { return R(["<b>" + esc(c.name) + "</b>", esc(c.weight) + "%"].concat(sig.map(function (_, i) { return esc((c.scores || [])[i] == null ? "—" : c.scores[i]); }))); });
+    rows.push(R(["<b>Weighted score</b>", "<b>" + wsum + "%</b>"].concat(tot.map(function (t) { return "<b>" + t.toFixed(2) + "</b>"; })), "best-total"));
+    var matrix = rows.length ? table(["Criterion", "Weight"].concat(sig), rows, sig.map(function (_, i) { return i + 2; }).concat([1])) : "";
+    var bars = sig.length ? '<div class="bars glass ' + rv() + '" role="img" aria-label="Weighted scores out of 5">' + sig.map(function (name, i) {
+      return '<div class="bar-row' + (tot[i] === best ? " top" : "") + '" style="--v:' + (tot[i] / 5).toFixed(3) + ';--i:' + i + '"><span class="bar-n">' + esc(name) + '</span><span class="bar-t"><i></i></span><b class="bar-v">' + tot[i].toFixed(2) + "</b></div>";
+    }).join("") + '<p class="bar-scale"><span>0</span><span>Weighted score, out of 5</span><span>5</span></p></div>' : "";
+    var sel = Q.selected ? '<div class="callout glass ' + rv() + '"><div class="big">' + esc(Q.selectedLabel || "Selected") + "</div><div><p><b>" + esc(Q.selected) + "</b></p>" + (Q.justification || []).map(function (j) { return "<p class='muted' style='font-size:15px;margin-top:8px'>" + esc(j) + "</p>"; }).join("") + "</div></div>" : "";
+    return sec("Signal <em>selection</em>", esc(Q.intro || ""), (cand ? "<h3 class='sub-h'>Candidate signals</h3>" + cand : "") + (matrix ? "<h3 class='sub-h'>Weighted signal selection matrix</h3><p class='muted sub-p'>" + esc(Q.scale || "") + "</p>" + matrix : "") + (bars ? "<h3 class='sub-h'>Result</h3>" + bars : "") + sel, "signal");
+  }
+  function sensorsHTML() {
+    var K = S.sensors; if (!K) return "";
+    var cards = (K.candidates || []).length ? '<div class="grid g3">' + K.candidates.map(function (c, i) {
+      return '<div class="glass spot ' + rv() + '" style="overflow:hidden">' + (c.image ? '<img loading="lazy" src="' + esc(c.image) + '" alt="' + esc(c.name) + '">' : "") + '<div class="pad"><span class="tag">' + String(i + 1).padStart(2, "0") + "</span><h3 style='margin:10px 0 6px'>" + esc(c.name) + '</h3><p class="muted" style="font-size:14.5px">' + esc(c.text) + "</p></div></div>";
+    }).join("") + "</div>" : "";
+    var cmp = K.compare && (K.compare.rows || []).length ? table(K.compare.heads, K.compare.rows.map(function (r) { return R(["<b>" + esc(r.parameter) + "</b>", esc(r.v1), esc(r.v2)]); })) + (K.compare.note ? '<p class="muted fine reveal">' + esc(K.compare.note) + "</p>" : "") : "";
+    var spec = (K.spec || []).length ? '<div class="spec-head ' + rv() + '"><h3 class="sub-h">' + esc(K.specTitle || "Numerical design data") + "</h3>" + (K.specBadge ? '<span class="tag good">' + esc(K.specBadge) + "</span>" : "") + "</div>" + table(["Parameter", "Value"], K.spec.map(function (r) { return R(["<b>" + esc(r.parameter) + "</b>", esc(r.value)]); })) : "";
+    var C = K.conditioning, cond = C ? '<div class="glass pad cond ' + rv() + '"><h3>' + esc(C.title || "Sensor conditioning") + '</h3><p class="muted" style="margin:8px 0 12px">' + esc(C.intro || "") + "</p>" + (C.equation ? '<div class="eq">' + esc(C.equation) + "</div>" : "") + ((C.terms || []).length ? '<dl class="terms">' + C.terms.map(function (t) { return "<dt>" + esc(t.term) + "</dt><dd>" + esc(t.text) + "</dd>"; }).join("") + "</dl>" : "") + "</div>" : "";
+    var status = K.statusNote ? '<div class="callout glass ' + rv() + '"><div class="big">Status</div><p>' + esc(K.statusNote) + "</p></div>" : "";
+    var st = K.strain || {}, strain = (st.rows || []).length ? "<h3 class='sub-h'>" + esc(st.title || "Strain gauge data") + "</h3>" + table(["Parameter", "Value"], st.rows.map(function (r) { return R(["<b>" + esc(r.parameter) + "</b>", esc(r.value)]); })) : '<div class="empty reveal"><b>' + esc(st.title || "Strain gauge data") + "</b><span>" + esc(st.note || "Data to be added.") + "</span></div>";
+    return sec("Sensor <em>selection</em>", esc(K.intro || ""), (cards ? "<h3 class='sub-h'>Candidate sensors</h3>" + cards : "") + (cmp ? "<h3 class='sub-h'>Numerical comparison</h3>" + cmp : "") + spec + cond + status + strain, "sensor");
+  }
+  function cvViz(kind) {
+    if (kind === "pwm") {
+      var d = "M0 32", x;
+      for (x = 0; x < 280; x += 40) d += " V8 H" + (x + 28) + " V32 H" + (x + 40);
+      return '<svg class="cv-viz" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"><g class="pwm-run"><path d="' + d + '"/></g><path class="avg" d="M0 14 H200"/></svg>';
+    }
+    if (kind === "steps") {
+      var p = "M0 36", cols = "", i;
+      for (i = 0; i < 8; i++) { p += " V" + (34 - i * 4) + " H" + ((i + 1) * 25); cols += '<rect x="' + (i * 25) + '" y="0" width="25" height="40" style="--i:' + i + '"/>'; }
+      return '<svg class="cv-viz steps" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"><g class="lit">' + cols + '</g><path d="' + p + '"/></svg>';
+    }
+    return "";
+  }
+  function controlHTML() {
+    var V = S.controlVoltage; if (!V) return "";
+    var cards = '<div class="grid g3 cv-grid">' + (V.alternatives || []).map(function (a, i) {
+      if (!a.name) return '<div class="empty ' + rv() + '"><b>Alternative ' + (i + 1) + "</b><span>To be added.</span></div>";
+      var flow = (a.flow || []).length ? '<ol class="cv-flow">' + a.flow.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ol>" : "";
+      return '<article class="glass pad cv-card ' + rv() + '"><span class="tag blue">Alternative ' + (i + 1) + "</span><h3>" + esc(a.name) + "</h3>" + flow + cvViz(a.viz) + '<p class="cv-sum">' + esc(a.summary) + "</p>" +
+        ((a.pros || []).length ? '<h4 class="pc-h">Advantages</h4><div class="pc pro">' + ul(a.pros) + "</div>" : "") + ((a.cons || []).length ? '<h4 class="pc-h">Limitations</h4><div class="pc con">' + ul(a.cons) + "</div>" : "") + "</article>";
+    }).join("") + "</div>";
+    return sec("Control <em>voltage</em>", esc(V.intro || ""), cards, "control");
+  }
 
   views.concepts = function () {
     var c = S.concepts;
@@ -312,10 +363,13 @@
     var chosen = c.chosen ? '<div class="callout glass ' + rv() + '"><div class="big">Chosen</div><div><p><b>' + esc(c.chosen) + "</b></p><p class='muted' style='font-size:15px;margin-top:6px'>" + esc(c.reason) + "</p></div></div>" : "";
     var scope = (c.scopeIn.length || c.scopeOut.length) ? '<div class="grid g2" style="margin-top:16px"><div class="glass pad ' + rv() + '"><h3>In scope</h3><ul style="padding-left:18px;margin-top:8px">' + c.scopeIn.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul></div><div class="glass pad ' + rv() + '"><h3>Out of scope</h3><ul style="padding-left:18px;margin-top:8px">' + c.scopeOut.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div></div>" : "";
     var cmp = c.comparison && c.comparison.rows && c.comparison.rows.length ? table(c.comparison.heads, c.comparison.rows.map(function (r) { return R(r.map(function (x, i) { return i ? esc(x) : "<b>" + esc(x) + "</b>"; })); })) : "";
-    return sec("Alternatives", "At least three, sketched and compared fairly.", alts) +
+    var jump = [["signal", "Signal"], ["sensor", "Sensor"], ["control", "Control voltage"], ["gain", "Gain control"], ["decision", "Decision"]].filter(function (j) { return j[0] === "gain" || j[0] === "decision" || (j[0] === "signal" && S.signalSelection) || (j[0] === "sensor" && S.sensors) || (j[0] === "control" && S.controlVoltage); });
+    var nav = '<nav class="jump reveal" aria-label="On this page"><small>On this page</small>' + jump.map(function (j) { return '<a href="#' + j[0] + '">' + j[1] + "</a>"; }).join("") + "</nav>";
+    return nav + signalHTML() + sensorsHTML() + controlHTML() +
+      sec("Gain-control <em>alternatives</em>", "At least three, sketched and compared fairly.", alts, "gain") +
       (cmp ? sec("The methods side by side", "Feature-by-feature comparison of the three gain-control methods.", cmp) : "") +
       sec("Comparison", "Weighted criteria. The highest total is highlighted.", matrix) +
-      sec("Decision", "", (chosen || empty("Concept not chosen yet", "Record the chosen concept and the reason.")) + scope) + decisionsFor("concepts");
+      sec("Decision", "", (chosen || empty("Concept not chosen yet", "Record the chosen concept and the reason.")) + scope, "decision") + decisionsFor("concepts");
   };
 
   views.requirements = function () {
@@ -473,6 +527,14 @@
   };
 
   /* ---------------- shell ---------------- */
+  /* left-hand Pages rail: a strip of page numbers that slides open to the names (desktop only, CSS decides) */
+  function railHTML(cur) {
+    var rows = PAGES.map(function (p, i) {
+      var on = p.id === cur, name = p.num === 0 ? "Home" : p.short;
+      return '<a href="' + p.file + '" data-title="' + esc(name) + '"' + (on ? ' class="on" aria-current="page"' : "") + ' style="--k:' + i + '"><span class="rn">' + esc(name) + "</span><i>" + String(p.num).padStart(2, "0") + "</i></a>";
+    }).join("");
+    return '<aside class="rail" aria-label="Pages"><div class="rail-in"><div class="rail-h"><span class="rn">Pages</span><i>' + PAGES.length + "</i></div>" + rows + "</div></aside>";
+  }
   function navHTML(cur) {
     var main = ["problem", "requirements", "design", "failures", "notebook"];
     var links = main.map(function (id) { var p = byId[id]; return '<a href="' + p.file + '"' + (cur === id ? ' class="active"' : "") + ">" + p.short + "</a>"; }).join("");
@@ -514,7 +576,7 @@
     if (saved) document.documentElement.setAttribute("data-theme", saved);
 
     document.body.insertAdjacentHTML("afterbegin",
-      '<div class="ambient"></div>' + navHTML(id));
+      '<div class="ambient"></div>' + navHTML(id) + railHTML(id));
     var main = document.getElementById("content");
     main.innerHTML = pageHead(p) + (views[id] ? views[id]() : "") + pager(p);
     document.body.insertAdjacentHTML("beforeend",

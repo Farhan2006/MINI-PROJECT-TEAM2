@@ -54,20 +54,20 @@ window.SITE = {
     }
   ],
   "latest": {
-    "date": "2026-11-18",
-    "text": "Project write-up added: problem, three gain-control concepts, architecture and the validation plan. Measurements are still to be taken."
+    "date": "2026-11-19",
+    "text": "Concept choices now open with signal selection, then sensor selection, control-voltage alternatives (PWM with RC filter, DAC) and the gain-control methods."
   },
   "pageUpdated": {
-    "problem": "2026-11-18",
-    "concepts": "2026-11-18",
+    "problem": "2026-11-19",
+    "concepts": "2026-11-19",
     "requirements": "2026-11-18",
     "architecture": "2026-11-18",
-    "design": "2026-11-18",
+    "design": "2026-11-19",
     "integration": "2026-11-18",
     "validation": "2026-11-18",
-    "notebook": "2026-11-18"
+    "notebook": "2026-11-19"
   },
-  "defaultUpdated": "2026-11-18",
+  "defaultUpdated": "2026-11-19",
   "reviewDates": {
     "r1": "",
     "r2": "",
@@ -162,9 +162,49 @@ window.SITE = {
     "need": "An analog signal whose amplitude varies has to be brought to a usable output level. A fixed gain cannot do that for every input, so the amount of amplification must be adjustable on command from a digital controller, while the analog signal itself stays in the analog path.",
     "inputs": [
       {
-        "parameter": "Input signal",
-        "value": "Audio / low-amplitude analog signal",
-        "note": "Amplitude range (Vpp and Vrms) still to be measured."
+        "parameter": "Signal type",
+        "value": "Analog audio-frequency",
+        "note": "Selected"
+      },
+      {
+        "parameter": "Waveform",
+        "value": "Sinusoidal",
+        "note": "Assumed"
+      },
+      {
+        "parameter": "Frequency",
+        "value": "1 kHz",
+        "note": "Initial test condition"
+      },
+      {
+        "parameter": "Input amplitude",
+        "value": "100 mVpp",
+        "note": "Initial test condition"
+      },
+      {
+        "parameter": "Peak amplitude",
+        "value": "50 mV",
+        "note": "Calculated: Vpeak = Vpp / 2"
+      },
+      {
+        "parameter": "RMS voltage",
+        "value": "35.36 mV",
+        "note": "Calculated: VRMS = Vpeak / √2"
+      },
+      {
+        "parameter": "DC offset",
+        "value": "0 V",
+        "note": "Assumed"
+      },
+      {
+        "parameter": "Initial signal source",
+        "value": "Function generator",
+        "note": "Selected"
+      },
+      {
+        "parameter": "Measurement",
+        "value": "DSO",
+        "note": "Laboratory equipment"
       },
       {
         "parameter": "Gain command",
@@ -195,20 +235,47 @@ window.SITE = {
         "type": "app note",
         "learned": "The channel resistance changes with control voltage, but not linearly, and it also depends on signal amplitude. It can introduce distortion, so the gain curve and THD must be characterised.",
         "link": ""
+      },
+      {
+        "title": "Honeywell SS49E datasheet",
+        "type": "datasheet",
+        "learned": "Linear Hall-effect sensing, sensitivity, output bias and magnetic-field response. Typical sensitivity 1.4 mV/G, typical zero-field output 2.5 V at a 5 V supply, response time 3 µs.",
+        "link": ""
+      },
+      {
+        "title": "Digilent Arty A7 Reference Manual",
+        "type": "reference design",
+        "learned": "FPGA architecture, 100 MHz clock, switches, push buttons and GPIO. The board provides a 100 MHz clock, four push buttons, four slide switches, four user LEDs and PMOD expansion interfaces.",
+        "link": ""
+      },
+      {
+        "title": "Xilinx Artix-7 DS181",
+        "type": "datasheet",
+        "learned": "FPGA electrical specifications and I/O characteristics. The FPGA uses configurable I/O banks; the selected user I/O configuration is 3.3 V LVCMOS33.",
+        "link": ""
+      },
+      {
+        "title": "Microchip AVR131 application note",
+        "type": "app note",
+        "learned": "PWM-based analog waveform generation and RC low-pass filtering.",
+        "link": ""
       }
     ],
     "candidateFRs": [
       {
-        "id": "FR-A",
-        "text": "The gain of the amplifier is set by the FPGA through a DAC control voltage."
+        "id": "FR-01",
+        "text": "The system shall allow selection of eight different gain-control states.",
+        "acceptance": "All eight binary combinations must be recognized."
       },
       {
-        "id": "FR-B",
-        "text": "The analog input signal is amplified in the analog path and is not routed through the FPGA."
+        "id": "FR-02",
+        "text": "The FPGA shall output a digital control signal corresponding to the selected state.",
+        "acceptance": "Eight distinct digital output codes (e.g., 3-bit parallel lines 000 to 111)."
       },
       {
-        "id": "FR-C",
-        "text": "The gain is repeatable when the same control setting is applied again."
+        "id": "FR-03",
+        "text": "The digital control signal shall be converted into an analog control voltage using a DAC stage.",
+        "acceptance": "Eight distinguishable steady-state output voltages."
       }
     ],
     "unknowns": [
@@ -605,6 +672,42 @@ window.SITE = {
         "result": "Pending measurements",
         "margin": "—",
         "date": "2026-11-18"
+      },
+      {
+        "title": "Peak amplitude of the test signal",
+        "fr": "Input",
+        "equation": "Vpeak = Vpp / 2 = 100 mV / 2",
+        "values": "Vpp = 100 mVpp (initial test condition, sine wave)",
+        "result": "50 mV",
+        "margin": "—",
+        "date": "2026-11-19"
+      },
+      {
+        "title": "RMS voltage of the test signal",
+        "fr": "Input",
+        "equation": "VRMS = Vpeak / √2 = 50 mV / 1.414",
+        "values": "Vpeak = 50 mV",
+        "result": "35.36 mV",
+        "margin": "—",
+        "date": "2026-11-19"
+      },
+      {
+        "title": "SS49E output at 10 G",
+        "fr": "Sensor",
+        "equation": "Vout = 2.5 V + (1.4 mV/G × 10 G)",
+        "values": "Typical sensitivity 1.4 mV/G, zero-field output 2.5 V at a 5 V supply; linear region assumed",
+        "result": "2.514 V",
+        "margin": "Typical values, not worst case",
+        "date": "2026-11-19"
+      },
+      {
+        "title": "Sensor conditioning stage",
+        "fr": "Sensor",
+        "equation": "Vout = (Rf / Rin) × (VSS49E − Vref) + Vbias",
+        "values": "Vref = 2.5 V, Vbias = 1.65 V (centre of a 3.3 V ADC range); Rf and Rin not fixed yet",
+        "result": "Pending component values",
+        "margin": "—",
+        "date": "2026-11-19"
       }
     ],
     "components": [
@@ -821,6 +924,15 @@ window.SITE = {
   "failuresRequired": 3,
   "notebook": [
     {
+      "date": "2026-11-19",
+      "author": "Team 02",
+      "objective": "Recorded the signal input specification, signal selection, Hall-effect sensor data and the reference study.",
+      "decision": "Initial prototype input: a 1 kHz, 100 mVpp sine wave from a function generator. The SS49E Hall-effect sensor is the candidate sensor for later testing.",
+      "course": "Analog Electronic Circuits",
+      "learning": "The SS49E sits at about 2.5 V with no field, so its baseline has to be removed before amplification. Peak and RMS values follow from the peak-to-peak amplitude.",
+      "next": "Add the strain gauge data, then fix the remaining control-voltage alternatives."
+    },
+    {
       "date": "2026-11-18",
       "author": "Team 02",
       "objective": "Documented the problem, three gain-control concepts, the architecture and the validation plan.",
@@ -989,5 +1101,282 @@ window.SITE = {
         "Alternatives: CD4066BE switching, DIP switch"
       ]
     }
-  ]
+  ],
+  "signalSelection": {
+    "intro": "This is the first engineering decision: selecting a suitable signal for the variable gain amplifier.",
+    "candidates": [
+      {
+        "signal": "Audio",
+        "characteristics": "20 Hz – 20 kHz",
+        "application": "Audio amplification"
+      },
+      {
+        "signal": "Hall sensor",
+        "characteristics": "Analog voltage varying with magnetic field",
+        "application": "Magnetic-field measurement"
+      },
+      {
+        "signal": "Strain gauge",
+        "characteristics": "Small resistance variation",
+        "application": "Force and weight measurement"
+      },
+      {
+        "signal": "Piezoelectric",
+        "characteristics": "Dynamic voltage",
+        "application": "Vibration measurement"
+      },
+      {
+        "signal": "Photodetector",
+        "characteristics": "Light-dependent current/voltage",
+        "application": "Optical sensing"
+      }
+    ],
+    "scale": "Scoring: 1 = poor, 5 = excellent.",
+    "signals": [
+      "Audio",
+      "Hall",
+      "Strain gauge",
+      "Piezo"
+    ],
+    "criteria": [
+      {
+        "name": "Signal availability",
+        "weight": 20,
+        "scores": [
+          5,
+          4,
+          3,
+          4
+        ]
+      },
+      {
+        "name": "Amplitude controllability",
+        "weight": 20,
+        "scores": [
+          5,
+          4,
+          3,
+          3
+        ]
+      },
+      {
+        "name": "Ease of testing",
+        "weight": 20,
+        "scores": [
+          5,
+          4,
+          3,
+          4
+        ]
+      },
+      {
+        "name": "Repeatability",
+        "weight": 20,
+        "scores": [
+          5,
+          4,
+          3,
+          3
+        ]
+      },
+      {
+        "name": "Suitability for VGA",
+        "weight": 20,
+        "scores": [
+          5,
+          5,
+          5,
+          4
+        ]
+      }
+    ],
+    "selectedLabel": "Selected for initial prototype",
+    "selected": "Audio-frequency sine wave from function generator",
+    "justification": [
+      "The audio-frequency sine wave was selected as the initial input because its frequency and amplitude can be controlled independently. A function generator provides repeatable test conditions, allowing the amplifier's input and output amplitudes to be compared accurately.",
+      "The initial testing frequency is 1 kHz and the input amplitude is 100 mVpp.",
+      "This allows the system to be tested without introducing sensor noise or mechanical variations during initial development."
+    ]
+  },
+  "sensors": {
+    "intro": "The sensor selection study identifies a suitable real-world analog signal source for the future application of the VGA.",
+    "candidates": [
+      {
+        "name": "SS49E Hall-effect sensor",
+        "text": "Converts magnetic-field variation into a proportional analog output voltage.",
+        "image": ""
+      },
+      {
+        "name": "Strain gauge",
+        "text": "Produces a small resistance variation according to applied mechanical strain.",
+        "image": ""
+      },
+      {
+        "name": "Piezoelectric sensor",
+        "text": "Produces an electrical signal when subjected to mechanical deformation or vibration.",
+        "image": ""
+      }
+    ],
+    "compare": {
+      "heads": [
+        "Parameter",
+        "SS49E",
+        "Strain gauge"
+      ],
+      "rows": [
+        {
+          "parameter": "Supply",
+          "v1": "2.7 – 6.5 V",
+          "v2": "Excitation required"
+        },
+        {
+          "parameter": "Output",
+          "v1": "Analog voltage",
+          "v2": "Resistance change"
+        },
+        {
+          "parameter": "Sensitivity",
+          "v1": "1.4 mV/G typical",
+          "v2": "Gauge factor approximately 2 for common metal foil gauges"
+        },
+        {
+          "parameter": "Signal nature",
+          "v1": "DC and AC variations",
+          "v2": "Static and dynamic strain"
+        },
+        {
+          "parameter": "Conditioning",
+          "v1": "Buffering",
+          "v2": "Wheatstone bridge and amplifier"
+        },
+        {
+          "parameter": "Contact required",
+          "v1": "No",
+          "v2": "Yes"
+        },
+        {
+          "parameter": "Selected",
+          "v1": "Yes",
+          "v2": "No"
+        }
+      ],
+      "note": "The strain-gauge gauge factor is representative of conventional metallic foil gauges; it is not a specification for a particular purchased part."
+    },
+    "specTitle": "SS49E numerical design data",
+    "specBadge": "Preferred sensor for future sensor-based testing",
+    "spec": [
+      {
+        "parameter": "Supply voltage",
+        "value": "2.7 – 6.5 V"
+      },
+      {
+        "parameter": "Typical supply current",
+        "value": "6 mA"
+      },
+      {
+        "parameter": "Typical sensitivity",
+        "value": "1.4 mV/G"
+      },
+      {
+        "parameter": "Minimum sensitivity",
+        "value": "1.0 mV/G"
+      },
+      {
+        "parameter": "Maximum sensitivity",
+        "value": "1.75 mV/G"
+      },
+      {
+        "parameter": "Zero-field output",
+        "value": "2.5 V typical at 5 V"
+      },
+      {
+        "parameter": "Magnetic operating range",
+        "value": "±650 G minimum specified"
+      },
+      {
+        "parameter": "Typical magnetic range",
+        "value": "±1000 G"
+      },
+      {
+        "parameter": "Response time",
+        "value": "3 µs"
+      }
+    ],
+    "conditioning": {
+      "title": "Sensor conditioning (design note)",
+      "intro": "The SS49E rests at about 2.5 V with no field. Gaining that directly would drive the op-amp into its supply rail (for example, a gain of 10 on 2.514 V at 10 G would ask for 25.14 V), so the 2.5 V quiescent voltage has to be subtracted before amplifying, using a differential or instrumentation amplifier.",
+      "equation": "Vout = (Rf / Rin) × (VSS49E − Vref) + Vbias",
+      "terms": [
+        {
+          "term": "Vref (2.5 V)",
+          "text": "Removes the zero-field DC offset. A precision reference or a buffered divider from the same 5 V rail lets baseline drift cancel out."
+        },
+        {
+          "term": "Vbias (1.65 V)",
+          "text": "Shifts the amplified signal to the centre of a 3.3 V ADC range so the FPGA can read both North (negative) and South (positive) magnetic poles."
+        },
+        {
+          "term": "Op-amp",
+          "text": "A rail-to-rail input/output op-amp such as the MCP6002 or OPA2340 is suggested."
+        }
+      ]
+    },
+    "statusNote": "The function generator remains the actual input for the current prototype. The SS49E is a candidate sensor, not an already integrated input.",
+    "strain": {
+      "title": "Strain gauge data",
+      "note": "Data to be added.",
+      "rows": []
+    }
+  },
+  "controlVoltage": {
+    "intro": "The FPGA picks one of eight gain states as a 3-bit code. Three ways of turning that code into the analog control voltage are compared.",
+    "alternatives": [
+      {
+        "name": "PWM with RC low-pass filter",
+        "summary": "The FPGA drives a PWM output whose duty cycle follows the selected state. An RC low-pass filter averages the pulses into a steady analog control voltage (Microchip AVR131: PWM-based analog waveform generation and RC low-pass filtering).",
+        "flow": [
+          "FPGA",
+          "PWM",
+          "RC filter",
+          "Vctrl"
+        ],
+        "viz": "pwm",
+        "pros": [
+          "Uses a single FPGA output pin",
+          "No extra converter part is needed"
+        ],
+        "cons": [
+          "The RC filter has to be sized to smooth the pulses",
+          "The output settles slowly and keeps some ripple"
+        ]
+      },
+      {
+        "name": "DAC",
+        "summary": "The FPGA's 3-bit control code goes straight into a digital-to-analog converter, which outputs one of eight steady control voltages (candidate FR-03: eight distinguishable steady-state output voltages).",
+        "flow": [
+          "FPGA",
+          "3-bit code",
+          "DAC",
+          "Vctrl"
+        ],
+        "viz": "steps",
+        "pros": [
+          "Converts the digital code directly into a voltage",
+          "Steady output without a smoothing filter"
+        ],
+        "cons": [
+          "Needs a DAC part or resistor network and its interface",
+          "Resolution is fixed by the number of bits"
+        ]
+      },
+      {
+        "name": "",
+        "summary": "",
+        "flow": [],
+        "viz": "",
+        "pros": [],
+        "cons": []
+      }
+    ]
+  }
 };
