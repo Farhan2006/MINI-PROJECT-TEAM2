@@ -376,3 +376,31 @@ footer .foot-slug { color: #f6f5f1; font-family: var(--display); font-weight: 90
   .farrow { width: 2px; height: 34px; justify-self: center; background: repeating-linear-gradient(180deg, var(--stroke-strong) 0 6px, transparent 6px 12px); }
   .farrow::after { right: auto; left: -4px; top: auto; bottom: -2px; border: 5px solid transparent; border-top: 8px solid var(--fg); border-left-color: transparent; }
 }
+
+/* ---------- UI refinements ---------- */
+main { counter-reset: sec; }
+.section { counter-increment: sec; }
+.sec-head::before { content: counter(sec, decimal-leading-zero) " /"; display: block; font-size: 11px; font-weight: 600; letter-spacing: .16em; color: var(--accent); margin-bottom: 12px; }
+.pad.glass, .callout.glass, .dcard.glass { transition: border-color .3s, background-color .3s, transform .5s var(--spring); }
+.pad.glass:hover, .callout.glass:hover { border-color: var(--stroke-strong); }
+.nav-links a:active, .btn:active { transform: scale(.97); }
+.lede, .sec-head p { text-wrap: pretty; }
+td { overflow-wrap: anywhere; }
+td b { font-weight: 600; }
+.chip, .tag { white-space: nowrap; }
+
+/* tables turn into stacked cards on phones (labels come from data-l) */
+@media (max-width: 640px) {
+  .tw.glass { padding: 0; background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; overflow: visible; }
+  .tw table { min-width: 0; display: block; }
+  .tw thead { display: none; }
+  .tw tbody { display: grid; gap: 10px; }
+  .tw tr { display: block; padding: 6px 16px; border: 1px solid var(--stroke); border-radius: 14px; background: var(--glass); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  .tw td { display: grid; grid-template-columns: 104px 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--stroke); text-align: left; }
+  .tw td:first-child { border-top: 0; }
+  .tw td::before { content: attr(data-l); font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding-top: 3px; }
+  .tw td.num { text-align: left; }
+  .page-head { padding-top: 32px; }
+  .hero { padding-top: 34px; }
+  .section { margin-top: 64px; }
+}

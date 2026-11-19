@@ -164,22 +164,16 @@ window.SITE = {
       {
         "parameter": "Input signal",
         "value": "Audio / low-amplitude analog signal",
-        "unit": "n/a",
-        "source": "assumed",
         "note": "Amplitude range (Vpp and Vrms) still to be measured."
       },
       {
         "parameter": "Gain command",
         "value": "Digital data from the FPGA, converted to an analog control voltage by a DAC",
-        "unit": "n/a",
-        "source": "assumed",
         "note": "DAC resolution and range to be fixed at component selection."
       },
       {
         "parameter": "Power",
         "value": "Dual supply rails for the analog amplifier",
-        "unit": "V",
-        "source": "assumed",
         "note": "Voltages to be fixed at component selection."
       }
     ],
@@ -197,7 +191,7 @@ window.SITE = {
         "link": ""
       },
       {
-        "title": "MOSFET as a voltage-controlled resistance",
+        "title": "JFET as a voltage-controlled resistance",
         "type": "app note",
         "learned": "The channel resistance changes with control voltage, but not linearly, and it also depends on signal amplitude. It can introduce distortion, so the gain curve and THD must be characterised.",
         "link": ""
@@ -219,7 +213,7 @@ window.SITE = {
     ],
     "unknowns": [
       "Usable input amplitude range and the gain range that can be reached.",
-      "How linearly the gain follows the DAC control voltage with the MOSFET in the feedback path.",
+      "How linearly the gain follows the DAC control voltage with the JFET in the feedback path.",
       "Distortion (THD) and usable bandwidth at each gain.",
       "How much the CD4066BE ON resistance and resistor tolerances shift the gain in the switched version.",
       "Settling time and output disturbance when the control value changes."
@@ -246,23 +240,23 @@ window.SITE = {
     ],
     "alternatives": [
       {
-        "name": "MOSFET-controlled continuous gain (FPGA + DAC)",
+        "name": "JFET-controlled continuous gain (FPGA + DAC)",
         "sketch": "",
-        "summary": "A DAC-controlled MOSFET modifies the effective feedback impedance of the op-amp, giving a potentially continuous gain-adjustment mechanism.",
+        "summary": "A DAC-controlled JFET modifies the effective feedback impedance of the op-amp, giving a potentially continuous gain-adjustment mechanism.",
         "rejectedBecause": "",
         "pros": [
           "FPGA-generated digital gain-control data",
           "DAC-based digital-to-analog control interface",
-          "MOSFET-controlled feedback network",
+          "JFET-controlled feedback network",
           "Analog gain adjustment using a control voltage",
           "Potential for continuous gain variation",
           "Reduced dependence on multiple discrete feedback resistors",
           "Flexible gain control compared with fixed-step switching"
         ],
         "cons": [
-          "MOSFET resistance is not perfectly linear with control voltage and signal amplitude.",
+          "JFET resistance is not perfectly linear with control voltage and signal amplitude.",
           "Gain may not change linearly with the DAC voltage.",
-          "The MOSFET may introduce distortion, so the gain curve, THD, usable bandwidth and signal range must be characterised experimentally."
+          "The JFET may introduce distortion, so the gain curve, THD, usable bandwidth and signal range must be characterised experimentally."
         ],
         "scores": {
           "Continuous gain adjustment": 5,
@@ -327,7 +321,7 @@ window.SITE = {
     "comparison": {
       "heads": [
         "Feature",
-        "MOSFET control",
+        "JFET control",
         "CD4066BE",
         "Physical DIP switch"
       ],
@@ -352,13 +346,13 @@ window.SITE = {
         ],
         [
           "Resistor selection",
-          "MOSFET-controlled network",
+          "JFET-controlled network",
           "Switched resistor network",
           "Manually selected resistor network"
         ],
         [
           "Gain resolution",
-          "Depends on MOSFET and control range",
+          "Depends on JFET and control range",
           "Number of resistor combinations",
           "Number of switch configurations"
         ],
@@ -376,7 +370,7 @@ window.SITE = {
         ],
         [
           "Main limitation",
-          "MOSFET nonlinearity and distortion",
+          "JFET nonlinearity and distortion",
           "ON resistance and discrete steps",
           "Manual operation"
         ],
@@ -388,11 +382,11 @@ window.SITE = {
         ]
       ]
     },
-    "chosen": "MOSFET-controlled continuous gain (FPGA + DAC)",
-    "reason": "Unlike a fixed resistor bank, the MOSFET-based architecture aims to give a continuously adjustable gain-control mechanism. That makes the architecture more flexible and suited to investigating dynamic signal-level adjustment. The CD4066BE and DIP-switch versions are kept as alternatives for comparison, not as separate projects.",
+    "chosen": "JFET-controlled continuous gain (FPGA + DAC)",
+    "reason": "Unlike a fixed resistor bank, the JFET-based architecture aims to give a continuously adjustable gain-control mechanism. That makes the architecture more flexible and suited to investigating dynamic signal-level adjustment. The CD4066BE and DIP-switch versions are kept as alternatives for comparison, not as separate projects.",
     "scopeIn": [
       "Programmable gain from the FPGA through a DAC control voltage",
-      "MOSFET-controlled op-amp feedback network",
+      "JFET-controlled op-amp feedback network",
       "Comparison with the CD4066BE and DIP-switch versions",
       "Characterisation of gain, bandwidth, distortion, settling time and repeatability"
     ],
@@ -453,7 +447,7 @@ window.SITE = {
     },
     {
       "id": "FR5",
-      "requirement": "Distortion added by the MOSFET-controlled stage is characterised.",
+      "requirement": "Distortion added by the JFET-controlled stage is characterised.",
       "target": "To be set",
       "method": "THD measurement at selected gains",
       "source": "assumed",
@@ -486,7 +480,7 @@ window.SITE = {
       },
       {
         "name": "Op-amp variable gain stage",
-        "sub": "MOSFET-controlled feedback network"
+        "sub": "JFET-controlled feedback network"
       },
       {
         "name": "Amplified analog output",
@@ -494,7 +488,7 @@ window.SITE = {
       }
     ],
     "controlPath": {
-      "name": "FPGA → DAC → MOSFET control voltage",
+      "name": "FPGA → DAC → JFET control voltage",
       "sub": "Gain-control path: adjusts the amplifier feedback impedance"
     },
     "paths": [
@@ -511,8 +505,8 @@ window.SITE = {
         "steps": [
           "The FPGA generates digital control data.",
           "The digital control data is converted into an analog voltage using a DAC.",
-          "The DAC output drives the MOSFET-based gain-control circuit.",
-          "The MOSFET changes the effective resistance / impedance of the amplifier feedback network.",
+          "The DAC output drives the JFET-based gain-control circuit.",
+          "The JFET changes the effective resistance / impedance of the amplifier feedback network.",
           "The gain of the amplifier changes accordingly."
         ]
       }
@@ -521,7 +515,7 @@ window.SITE = {
     "hierarchy": [
       {
         "label": "Primary design",
-        "text": "FPGA + DAC + MOSFET-controlled op-amp feedback network."
+        "text": "FPGA + DAC + JFET-controlled op-amp feedback network."
       },
       {
         "label": "Alternative 1",
@@ -546,7 +540,7 @@ window.SITE = {
         "fr": "FR1"
       },
       {
-        "name": "MOSFET feedback element",
+        "name": "JFET feedback element",
         "input": "Analog control voltage",
         "output": "Effective feedback resistance",
         "fr": "FR1"
@@ -574,11 +568,11 @@ window.SITE = {
       {
         "subsystem": "Gain-control method",
         "options": [
-          "MOSFET + DAC",
+          "JFET + DAC",
           "CD4066BE switching",
           "DIP switch"
         ],
-        "chosen": "MOSFET + DAC",
+        "chosen": "JFET + DAC",
         "reason": "Only this option gives potentially continuous, FPGA-driven gain. The other two stay as alternatives for comparison."
       },
       {
@@ -597,8 +591,8 @@ window.SITE = {
       {
         "title": "Gain relations of the op-amp feedback network",
         "fr": "FR1",
-        "equation": "Non-inverting: Av = 1 + Rf/Rg   |   Inverting: Av = −Rf/Rin   |   With the MOSFET in Rf: Av = f(Vcontrol)",
-        "values": "Rf is set by the MOSFET operating point, which the DAC voltage controls. Component values are not fixed yet.",
+        "equation": "Non-inverting: Av = 1 + Rf/Rg   |   Inverting: Av = −Rf/Rin   |   With the JFET in Rf: Av = f(Vcontrol)",
+        "values": "Rf is set by the JFET operating point, which the DAC voltage controls. Component values are not fixed yet.",
         "result": "Pending component values",
         "margin": "—",
         "date": "2026-11-18"
@@ -624,7 +618,7 @@ window.SITE = {
       {
         "part": "DAC",
         "role": "Converts FPGA digital data into an analog control voltage",
-        "reason": "Lets a digital value set the MOSFET operating point.",
+        "reason": "Lets a digital value set the JFET operating point.",
         "alternatives": "Digital switch control (CD4066BE)",
         "date": "2026-11-18"
       },
@@ -636,7 +630,7 @@ window.SITE = {
         "date": "2026-11-18"
       },
       {
-        "part": "MOSFET",
+        "part": "JFET",
         "role": "Controls the effective impedance in the feedback network",
         "reason": "A voltage-controlled resistance allows continuous gain variation.",
         "alternatives": "CD4066BE switched resistors; DIP-switch resistor network",
@@ -645,7 +639,7 @@ window.SITE = {
       {
         "part": "Feedback resistors",
         "role": "Determine amplifier gain and operating range",
-        "reason": "Set the gain range around the MOSFET.",
+        "reason": "Set the gain range around the JFET.",
         "alternatives": "—",
         "date": "2026-11-18"
       },
@@ -653,7 +647,7 @@ window.SITE = {
         "part": "CD4066BE",
         "role": "Bilateral analog switching for discrete gain selection in the alternative circuit",
         "reason": "Electronically switched resistor network.",
-        "alternatives": "MOSFET control",
+        "alternatives": "JFET control",
         "date": "2026-11-18"
       },
       {
@@ -705,10 +699,10 @@ window.SITE = {
       "id": "D1",
       "page": "concepts",
       "date": "2026-11-18",
-      "decision": "Use a DAC-controlled MOSFET in the op-amp feedback network as the primary gain-control method",
+      "decision": "Use a DAC-controlled JFET in the op-amp feedback network as the primary gain-control method",
       "options": [
         {
-          "name": "MOSFET-controlled feedback (FPGA + DAC)",
+          "name": "JFET-controlled feedback (FPGA + DAC)",
           "reason": "Potentially continuous gain, controlled by a voltage the FPGA can set."
         },
         {
@@ -735,8 +729,8 @@ window.SITE = {
           "concept": "digital control data generated by the FPGA"
         }
       ],
-      "how": "With a MOSFET inside Rf, gain becomes a function of the control voltage: Av = f(Vcontrol). The FPGA sets a digital code, the DAC turns it into the control voltage, and the MOSFET changes the feedback resistance.",
-      "meets": "MOSFET resistance is not perfectly linear with control voltage and signal amplitude, so the gain may not follow the DAC voltage linearly and the stage may add distortion. Gain curve, THD and bandwidth must be measured.",
+      "how": "With a JFET inside Rf, gain becomes a function of the control voltage: Av = f(Vcontrol). The FPGA sets a digital code, the DAC turns it into the control voltage, and the JFET changes the feedback resistance.",
+      "meets": "JFET resistance is not perfectly linear with control voltage and signal amplitude, so the gain may not follow the DAC voltage linearly and the stage may add distortion. Gain curve, THD and bandwidth must be measured.",
       "predicted": "",
       "predictedDate": "",
       "measured": "",
@@ -803,7 +797,7 @@ window.SITE = {
       },
       {
         "parameter": "THD",
-        "measure": "Distortion introduced by the MOSFET-controlled stage"
+        "measure": "Distortion introduced by the JFET-controlled stage"
       },
       {
         "parameter": "Noise",
@@ -830,9 +824,9 @@ window.SITE = {
       "date": "2026-11-18",
       "author": "Team 02",
       "objective": "Documented the problem, three gain-control concepts, the architecture and the validation plan.",
-      "decision": "The MOSFET-controlled continuous-gain design is the primary architecture. The CD4066BE and DIP-switch versions are alternatives for comparison.",
+      "decision": "The JFET-controlled continuous-gain design is the primary architecture. The CD4066BE and DIP-switch versions are alternatives for comparison.",
       "course": "Analog Electronic Circuits",
-      "learning": "The FPGA only controls the gain. The analog signal stays in the analog path unless an ADC is added. MOSFET resistance is not linear, so the gain curve and distortion must be measured, not assumed.",
+      "learning": "The FPGA only controls the gain. The analog signal stays in the analog path unless an ADC is added. JFET resistance is not linear, so the gain curve and distortion must be measured, not assumed.",
       "next": "Fix component values, set numeric targets for the FRs, simulate gain against control voltage, then build and measure."
     },
     {
@@ -878,7 +872,7 @@ window.SITE = {
       "note": "Appendix I naming"
     }
   ],
-  "fullTitle": "FPGA-Controlled Variable Gain Amplifier with MOSFET-Based Continuous Gain Adjustment",
+  "fullTitle": "FPGA-Controlled Variable Gain Amplifier with JFET-Based Continuous Gain Adjustment",
   "about": {
     "domain": [
       "Analog Electronics",
@@ -888,12 +882,12 @@ window.SITE = {
       "Mixed-Signal Design"
     ],
     "objective": "To design a variable gain amplifier capable of adjusting the amplitude of an input analog signal through FPGA-controlled circuitry, enabling programmable gain control and potentially continuous gain variation.",
-    "summary": "The project explores multiple gain-control architectures: digitally switched gain selection using analog switches and physical DIP switches, and a MOSFET-controlled op-amp feedback network that enables continuous gain adjustment.",
+    "summary": "The project explores multiple gain-control architectures: digitally switched gain selection using analog switches and physical DIP switches, and a JFET-controlled op-amp feedback network that enables continuous gain adjustment.",
     "technologies": [
       "FPGA",
       "DAC",
       "Op-Amp",
-      "MOSFET",
+      "JFET",
       "CD4066BE",
       "Analog Feedback Networks",
       "Signal Conditioning",
@@ -902,14 +896,14 @@ window.SITE = {
     "objectives": [
       "Programmable gain control of an analog amplifier.",
       "FPGA-to-DAC interfacing for analog control generation.",
-      "MOSFET-based modulation of the amplifier feedback network.",
+      "JFET-based modulation of the amplifier feedback network.",
       "Continuous gain adjustment versus discrete gain selection.",
       "Comparison of semiconductor-based control and manual switching.",
       "Analog signal amplification without routing the analog signal through the FPGA.",
-      "Evaluation of the effects of switching resistance, MOSFET nonlinearity and circuit component tolerances."
+      "Evaluation of the effects of switching resistance, JFET nonlinearity and circuit component tolerances."
     ]
   },
-  "chainNote": "FPGA → DAC → MOSFET control voltage. This gain-control path adjusts the amplifier's feedback impedance.",
+  "chainNote": "FPGA → DAC → JFET control voltage. This gain-control path adjusts the amplifier's feedback impedance.",
   "chain": [
     {
       "id": "in",
@@ -929,14 +923,14 @@ window.SITE = {
       "id": "amp",
       "group": "signal",
       "name": "Op-amp variable gain stage",
-      "sub": "MOSFET-controlled feedback network",
+      "sub": "JFET-controlled feedback network",
       "page": "architecture",
       "viz": "wave-amp",
-      "info": "An op-amp with a MOSFET inside its feedback network. The control voltage changes the MOSFET's effective resistance, which changes the feedback impedance and therefore the gain.",
+      "info": "An op-amp with a JFET inside its feedback network. The control voltage changes the JFET's effective resistance, which changes the feedback impedance and therefore the gain.",
       "facts": [
-        "Non-inverting: Av = 1 + Rf/Rg, with Rf set by the MOSFET",
+        "Non-inverting: Av = 1 + Rf/Rg, with Rf set by the JFET",
         "Gain becomes a function of the control voltage: Av = f(Vcontrol)",
-        "MOSFET nonlinearity may add distortion, to be measured"
+        "JFET nonlinearity may add distortion, to be measured"
       ]
     },
     {
@@ -974,17 +968,17 @@ window.SITE = {
       "sub": "Digital data to control voltage",
       "page": "design",
       "viz": "steps",
-      "info": "Converts the FPGA's digital value into the analog control voltage that sets the MOSFET's operating point. Its resolution and range are still to be fixed at component selection.",
+      "info": "Converts the FPGA's digital value into the analog control voltage that sets the JFET's operating point. Its resolution and range are still to be fixed at component selection.",
       "facts": [
         "One DAC step is one gain step",
-        "Gain resolution depends on the DAC step and the MOSFET range",
+        "Gain resolution depends on the DAC step and the JFET range",
         "Settling time after a step will be measured"
       ]
     },
     {
       "id": "mos",
       "group": "control",
-      "name": "MOSFET",
+      "name": "JFET",
       "sub": "Sets the feedback impedance",
       "page": "concepts",
       "viz": "curve",

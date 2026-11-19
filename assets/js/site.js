@@ -84,7 +84,7 @@
     var h = heads.map(function (x, i) { return "<th" + (numCols.indexOf(i) > -1 ? ' class="num"' : "") + ">" + esc(x) + "</th>"; }).join("");
     var r = rows.map(function (row, ri) {
       return "<tr" + (row.__cls ? ' class="' + row.__cls + '"' : "") + ">" + row.cells.map(function (c, i) {
-        return "<td" + (numCols.indexOf(i) > -1 ? ' class="num"' : "") + ">" + c + "</td>";
+        return "<td" + (numCols.indexOf(i) > -1 ? ' class="num"' : "") + ' data-l="' + esc(heads[i]) + '">' + c + "</td>";
       }).join("") + "</tr>";
     }).join("");
     return '<div class="tw glass ' + rv() + '"><table><thead><tr>' + h + "</tr></thead><tbody>" + r + "</tbody></table></div>";
@@ -272,10 +272,9 @@
     var p = S.problem;
     var need = p.need ? '<div class="glass pad ' + rv() + '"><p style="font-size:20px;letter-spacing:-0.02em">' + esc(p.need) + "</p></div>"
       : empty("Need statement pending", "State what is required, in measurable terms, without naming a circuit.");
-    var inputs = p.inputs.length ? table(["Parameter", "Value", "Unit", "Source", "Note"], p.inputs.map(function (i) {
-      var c = i.source === "measured" ? "good" : i.source === "datasheet" ? "blue" : "warn";
-      return R([esc(i.parameter), esc(i.value), esc(i.unit), '<span class="tag ' + c + '">' + esc(i.source) + "</span>", esc(i.note)]);
-    })) : empty("No design inputs yet", "Every number needs a unit and a source: <b>measured</b>, <b>datasheet</b> or <b>assumed</b>.");
+    var inputs = p.inputs.length ? table(["Parameter", "Value", "Note"], p.inputs.map(function (i) {
+      return R(["<b>" + esc(i.parameter) + "</b>", esc(i.value), esc(i.note)]);
+    })) : empty("No design inputs yet", "List each design input with its value and a note on where it came from.");
     var bg = p.background.length ? '<div class="grid g2">' + p.background.map(function (b) {
       return '<div class="glass pad spot ' + rv() + '"><span class="tag blue">' + esc(b.type) + "</span><h3 style='margin:10px 0 6px'>" + (b.link ? '<a href="' + esc(b.link) + '">' + esc(b.title) + "</a>" : esc(b.title)) + '</h3><p class="muted">' + esc(b.learned) + "</p></div>";
     }).join("") + "</div>" : empty("Background study pending", "List each datasheet, application note or reference design studied, and what the team learned from it.");
@@ -284,7 +283,7 @@
     }).join("") + "</div>" : empty("Three candidate FRs needed for Review 1", "Draft requirements only — they are frozen at Review 3.");
     var unk = p.unknowns.length ? '<div class="glass pad ' + rv() + '"><ul style="padding-left:18px">' + p.unknowns.map(function (u) { return "<li>" + esc(u) + "</li>"; }).join("") + "</ul></div>" : "";
     return sec("Need statement", "", need) +
-      sec("Design inputs", "Quantified, with units and where each number came from.", inputs) +
+      sec("Design inputs", "What goes in, and what is still to be pinned down.", inputs) +
       sec("Background study", "What we read, and what each source taught us.", bg) +
       sec("Candidate functional requirements", "Three drafts to carry into the concept stage.", frs) +
       (unk ? sec("Still unknown", "", unk) : "") + decisionsFor("problem");

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>try{if(sessionStorage.getItem("vdtWipe"))document.documentElement.classList.add("wipe-hold")}catch(e){}</script>
+<script>try{var w=sessionStorage.getItem("vdtWipe");if(w){var o=JSON.parse(w),r=document.documentElement;r.classList.add("wipe-hold");r.setAttribute("data-wipe",o.t||"");r.style.setProperty("--wx",(o.x||0)+"px");r.style.setProperty("--wy",(o.y||0)+"px")}}catch(e){}</script>
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="stylesheet" href="assets/css/motion.css">
 </head>

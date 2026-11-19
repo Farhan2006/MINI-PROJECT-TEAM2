@@ -70,7 +70,7 @@
     ] },
     { g: "Design chain", id: "problem", n: "2", title: "Problem and need", sub: "Need statement, design inputs, background study and candidate requirements.", blocks: [
       { path: "problem", label: "Need statement", f: [A("need", "What is required, in measurable terms, without naming a circuit")] },
-      { path: "problem.inputs", label: "Design inputs", rows: [T("parameter", "Parameter"), T("value", "Value"), T("unit", "Unit"), S("source", "Source", ["measured", "datasheet", "assumed"]), T("note", "Note", { full: true })], title: "parameter" },
+      { path: "problem.inputs", label: "Design inputs", rows: [T("parameter", "Parameter"), T("value", "Value"), T("note", "Note", { full: true })], title: "parameter" },
       { path: "problem.background", label: "Background study", rows: [T("title", "Source name"), S("type", "Type", ["datasheet", "app note", "reference design"]), A("learned", "What we learned"), T("link", "Link", { full: true })], title: "title" },
       { path: "problem.candidateFRs", label: "Candidate functional requirements", rows: [T("id", "ID (e.g. FR-A)"), T("text", "Requirement", { full: true })], title: "id" },
       { path: "problem.unknowns", label: "Still unknown", strings: true, hint: "One item per line." }
