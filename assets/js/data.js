@@ -782,7 +782,13 @@ window.SITE = {
         "date": "2026-11-18"
       }
     ],
-    "media": [],
+    "media": [
+      {
+        "type": "image",
+        "src": "assets/img/amplifier-circuit.png",
+        "caption": "Amplifier circuit: a non-inverting op-amp stage (Vin through Rp, feedback R2, load RL) with a JFET at its inverting input, set by a control stage (VControl through R1, referenced to VRef)."
+      }
+    ],
     "bom": []
   },
   "courses": [
