@@ -390,6 +390,7 @@ main { counter-reset: sec; }
 td { overflow-wrap: anywhere; }
 td b { font-weight: 600; }
 .chip, .tag { white-space: nowrap; }
+@media (max-width: 520px) { .tag { white-space: normal; } } /* long badge text (e.g. the sensor spec badge) must wrap, not push the page wider than the phone */
 
 /* tables turn into stacked cards on phones (labels come from data-l) */
 @media (max-width: 640px) {

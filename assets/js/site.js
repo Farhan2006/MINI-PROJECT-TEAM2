@@ -656,7 +656,8 @@
 
     /* nav shrink */
     var nav = document.querySelector(".nav");
-    function onScroll() { nav.style.height = window.scrollY > 24 ? "46px" : "52px"; }
+    var small = null;
+    function onScroll() { var s = window.scrollY > 24; if (s === small) return; small = s; nav.style.height = s ? "46px" : "52px"; }
     window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
 
     /* reveal on scroll */

@@ -8,43 +8,16 @@
   root.classList.add("js-motion");
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-  function isDark() { var t = root.getAttribute("data-theme"); return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; }
-
-  /* ---------- page transition: an iris opens from where you clicked, carrying the destination title ---------- */
-  function wipeArrive() {
-    if (!root.classList.contains("wipe-hold")) return;
-    try { sessionStorage.removeItem("vdtWipe"); } catch (e) {}
-    requestAnimationFrame(function () { requestAnimationFrame(function () {
-      root.classList.remove("wipe-hold"); root.classList.add("wipe-out");
-      setTimeout(function () {
-        root.classList.add("wipe-nt"); root.classList.remove("wipe-out"); root.removeAttribute("data-wipe");
-        root.style.removeProperty("--wx"); root.style.removeProperty("--wy");
-        requestAnimationFrame(function () { root.classList.remove("wipe-nt"); });
-      }, 1300);
-    }); });
+  var darkMQ = matchMedia("(prefers-color-scheme: dark)");
+  function isDark() { var t = root.getAttribute("data-theme"); return t ? t === "dark" : darkMQ.matches; }
+  /* warm the destination on hover/touch/focus so the next page is cached before the click */
+  var warmed = {};
+  function warm(e) {
+    var a = e.target.closest && e.target.closest("a[href]"), h = a && a.getAttribute("href");
+    if (!h || a.target || warmed[h] || h.charAt(0) === "#" || /^(https?:|mailto:|tel:)/.test(h)) return;
+    warmed[h] = 1; var l = doc.createElement("link"); l.rel = "prefetch"; l.href = h; doc.head.appendChild(l);
   }
-  function titleOf(a) {
-    var t = a.getAttribute("data-title");
-    if (!t) { var n = a.querySelector("h3, b"); t = n ? n.textContent : a.textContent; }
-    if (/(^|\/)index\.html?$/.test(a.getAttribute("href") || "") || a.classList.contains("brand")) t = "Home";
-    return String(t).replace(/\s+/g, " ").replace(/^\s*\d+\s*/, "").replace(/[←→]/g, "").trim().slice(0, 36);
-  }
-  function wipeLeave() {
-    /* capture phase: handle internal links before the site's own fade handler */
-    doc.addEventListener("click", function (e) {
-      var a = e.target.closest && e.target.closest("a[href]");
-      if (!a || a.target || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
-      var h = a.getAttribute("href");
-      if (!h || h.charAt(0) === "#" || /^(https?:|mailto:|tel:)/.test(h)) return;
-      e.preventDefault(); e.stopImmediatePropagation();
-      var r = a.getBoundingClientRect(), x = e.clientX || r.left + r.width / 2, y = e.clientY || r.top + r.height / 2, t = titleOf(a) + "_";
-      try { sessionStorage.setItem("vdtWipe", JSON.stringify({ t: t, x: Math.round(x), y: Math.round(y) })); } catch (er) {}
-      root.setAttribute("data-wipe", t); root.style.setProperty("--wx", x + "px"); root.style.setProperty("--wy", y + "px");
-      root.classList.add("wipe-go");
-      setTimeout(function () { location.href = h; }, 900);
-    }, true);
-    addEventListener("pageshow", function (e) { if (e.persisted) { root.classList.remove("wipe-go", "wipe-hold", "wipe-out"); } });
-  }
+  doc.addEventListener("pointerover", warm, { passive: true }); doc.addEventListener("touchstart", warm, { passive: true }); doc.addEventListener("focusin", warm);
 
   /* ---------- kinetic headings ---------- */
   function splitHeading(h) {
@@ -89,7 +62,7 @@
     calc(); addEventListener("scroll", calc, { passive: true }); addEventListener("resize", calc);
     new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }, { rootMargin: "200px" }).observe(tr);
     (function loop() {
-      if (vis) {
+      if (vis && (Math.abs(target - cur) > .0002 || last < 0)) {
         cur += (target - cur) * (reduce ? 1 : .12);
         tr.style.setProperty("--p", cur.toFixed(4));
         var a = Math.min(lis.length - 1, Math.floor(cur * lis.length * .999));
@@ -130,61 +103,6 @@
     });
   }
 
-  /* ---------- background: phosphor oscilloscope. Two big Lissajous figures draw themselves with glowing, fading
-              trails, like a scope screen. The pointer retunes the frequency ratio (move down the page to step
-              through 3:2, 5:4, 3:4 ...), a click jumps to the next ratio, and scrolling slides the figures. ---------- */
-  function phosphorField() {
-    var c = doc.createElement("canvas"); c.id = "bgField"; c.setAttribute("aria-hidden", "true");
-    var c2 = doc.createElement("canvas"); c2.id = "bgField2"; c2.setAttribute("aria-hidden", "true");
-    var amb = doc.querySelector(".ambient"); doc.body.insertBefore(c2, amb ? amb.nextSibling : doc.body.firstChild); doc.body.insertBefore(c, amb ? amb.nextSibling : doc.body.firstChild);
-    var cvs = [c, c2], ctxs = [c.getContext("2d"), c2.getContext("2d")], dpr = 1, vw = 0, vh = 0, last = 0, running = true, sy = scrollY, accent = "#f1501b", accAt = 0, tt = 0;
-    var RATIOS = [[3, 2], [5, 4], [3, 4], [5, 6], [2, 1], [7, 6]], pick = 0, auto = true;
-    var F = [
-      { cx: .86, cy: .30, s: .30, a: 3, b: 2, ta: 3, tb: 2, d: 0, hot: true, w: 1 },
-      { cx: .09, cy: .78, s: .22, a: 5, b: 4, ta: 5, tb: 4, d: 1.2, hot: false, w: -1 }
-    ];
-    var m = { y: .5, ty: .5, has: false };
-    function size() { dpr = Math.min(devicePixelRatio || 1, 1.5); vw = innerWidth; vh = innerHeight; cvs.forEach(function (cv, i) { cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr); ctxs[i].setTransform(dpr, 0, 0, dpr, 0, 0); ctxs[i].clearRect(0, 0, vw, vh); }); }
-    size(); addEventListener("resize", size);
-    addEventListener("pointermove", function (e) { m.ty = clamp(e.clientY / innerHeight, 0, 1); m.has = true; auto = false; setTarget(Math.min(RATIOS.length - 1, Math.floor(m.ty * RATIOS.length))); }, { passive: true });
-    doc.addEventListener("pointerdown", function () { setTarget((pick + 1) % RATIOS.length); });
-    doc.addEventListener("visibilitychange", function () { running = !doc.hidden; if (running) { last = 0; requestAnimationFrame(frame); } });
-    function setTarget(i) { pick = i; F[0].ta = RATIOS[i][0]; F[0].tb = RATIOS[i][1]; F[1].ta = RATIOS[(i + 2) % RATIOS.length][0]; F[1].tb = RATIOS[(i + 2) % RATIOS.length][1]; }
-    function pt(f, t, out) {
-      var R = Math.min(vw, vh) * f.s, cx = f.cx * vw, cy = f.cy * vh - sy * .05;
-      out[0] = cx + R * Math.sin(f.a * t + f.d); out[1] = cy + R * Math.sin(f.b * t);
-    }
-    function drawStatic() {
-      var o = [0, 0], dark = isDark();
-      F.forEach(function (f, fi) { var ctx = ctxs[fi]; ctx.clearRect(0, 0, vw, vh); ctx.beginPath(); for (var i = 0; i <= 600; i++) { pt(f, i / 600 * 6.2832, o); i ? ctx.lineTo(o[0], o[1]) : ctx.moveTo(o[0], o[1]); } ctx.strokeStyle = f.hot ? accent : "rgb(" + (dark ? "246,245,241" : "19,19,19") + ")"; ctx.lineWidth = 1.4; ctx.stroke(); });
-    }
-    function frame(now) {
-      if (!running) return;
-      if (!reduce) requestAnimationFrame(frame);
-      var dt = Math.min(.05, (now - (last || now)) / 1000); last = now; var dark = isDark();
-      if (now - accAt > 700) { accent = getComputedStyle(root).getPropertyValue("--accent").trim() || "#f1501b"; accAt = now; }
-      sy += (scrollY - sy) * .08;
-      if (auto && now % 9000 < dt * 1000) setTarget((pick + 1) % RATIOS.length);
-      /* fade the old trail (destination-out keeps the canvas transparent, so the paper shows through) */
-      var fade = (1 - Math.pow(.972, dt * 60)).toFixed(4);
-      ctxs.forEach(function (cx) { cx.globalCompositeOperation = "destination-out"; cx.fillStyle = "rgba(0,0,0," + fade + ")"; cx.fillRect(0, 0, vw, vh); cx.globalCompositeOperation = "source-over"; });
-      var steps = Math.max(5, Math.ceil(dt * 700)), dtt = dt * .85 / steps, o = [0, 0], p = [0, 0];
-      F.forEach(function (f, fi) {
-        var ctx = ctxs[fi]; ctx.lineCap = "round"; ctx.lineJoin = "round";
-        f.a += (f.ta - f.a) * Math.min(1, dt * 1.4); f.b += (f.tb - f.b) * Math.min(1, dt * 1.4); f.d += dt * .18 * f.w;
-        /* continue from the exact end of the last segment, so the trail stays one unbroken line while the ratio morphs */
-        ctx.beginPath(); if (f.px == null) { pt(f, tt, p); f.px = p[0]; f.py = p[1]; } ctx.moveTo(f.px, f.py);
-        for (var i = 1; i <= steps; i++) { pt(f, tt + dtt * i, o); ctx.lineTo(o[0], o[1]); }
-        f.px = o[0]; f.py = o[1];
-        ctx.strokeStyle = f.hot ? accent : "rgb(" + (dark ? "246,245,241" : "19,19,19") + ")";
-        ctx.lineWidth = f.hot ? 1.8 : 1.4; ctx.stroke();
-      });
-      tt += dt * .85;
-    }
-    if (reduce) { drawStatic(); return; }
-    requestAnimationFrame(frame);
-  }
-
   /* ---------- pointer: a clean ring that trails the cursor and reacts to what is under it ---------- */
   function ring() {
     if (reduce || !fine) return;
@@ -202,6 +120,7 @@
     doc.addEventListener("pointerdown", function () { el.classList.add("down"); });
     doc.addEventListener("pointerup", function () { el.classList.remove("down"); });
     (function loop() {
+      if (Math.abs(x - lx) < .05 && Math.abs(y - ly) < .05 && v < .001 && x === px && y === py) { requestAnimationFrame(loop); return; }
       lx += (x - lx) * .2; ly += (y - ly) * .2;
       var sp = Math.hypot(x - px, y - py); px = x; py = y; v += (Math.min(1, sp / 34) - v) * .12;
       el.style.transform = "translate3d(" + lx.toFixed(1) + "px," + ly.toFixed(1) + "px,0) scale(" + (1 + v * .35).toFixed(3) + ")";
@@ -253,7 +172,9 @@
 
     /* live scopes */
     var cvs = [].slice.call(box.querySelectorAll(".cviz")).concat([dV]), accent = "#f1501b", accAt = 0;
-    function fit(cv) { var dpr = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect(), w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (w && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; } return dpr; }
+    /* size comes from a ResizeObserver, not getBoundingClientRect on every canvas every frame (forced layout) */
+    var ro = "ResizeObserver" in window ? new ResizeObserver(function (es) { es.forEach(function (e) { e.target._r = e.contentRect; }); }) : null;
+    function fit(cv) { var dpr = Math.min(devicePixelRatio || 1, 2), r = (ro && cv._r) || cv.getBoundingClientRect(); if (ro && !cv._r) { cv._r = r; ro.observe(cv); } var w = Math.round(r.width * dpr), h = Math.round(r.height * dpr); if (w && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; } return dpr; }
     function hash(i) { var x = Math.sin(i * 91.7 + 13.1) * 43758.5453; return x - Math.floor(x); }
     function drawViz(cv, t, inv, dark) {
       var kind = cv.getAttribute("data-viz") || "wave-in", dpr = fit(cv), w = cv.width, h = cv.height; if (!w || !h) return;
@@ -314,9 +235,7 @@
   }
 
   function start() {
-    headings(); heroWave(); anatomy(); countUp(); scrollBar(); footWord(); sectionLines(); phosphorField(); ring(); chain();
+    headings(); heroWave(); anatomy(); countUp(); scrollBar(); footWord(); sectionLines(); ring(); chain();
   }
-  wipeLeave();
-  if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", function () { start(); wipeArrive(); });
-  else { start(); wipeArrive(); }
+  if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", start); else start();
 })();

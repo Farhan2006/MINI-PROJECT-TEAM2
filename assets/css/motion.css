@@ -1,13 +1,13 @@
 /* ============================================================
    MOTION LAYER — kinetic type, contour-map background, reticle pointer, signal chain,
-   scroll-driven 3D chip, iris page transition. Same paper-and-ink language as style.css.
+   scroll-driven 3D chip, page fade. Same paper-and-ink language as style.css.
    Everything switches off for reduced motion.
    ============================================================ */
 
-/* ---------- background: animated grain + living contour map (canvas) ---------- */
-.ambient::after { animation: grainShift .9s steps(5) infinite; }
-@keyframes grainShift { 0% { background-position: 0 0; } 20% { background-position: -40px 25px; } 40% { background-position: 30px -35px; } 60% { background-position: -25px -15px; } 80% { background-position: 45px 40px; } 100% { background-position: 0 0; } }
-#bgField { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+/* ---------- background: animated grain ---------- */
+/* grain shifts via transform (compositor-only) instead of background-position (repaints the blended full-screen layer); oversized so edges never show */
+.ambient::after { inset: -60px; will-change: transform; animation: grainShift .9s steps(5) infinite; }
+@keyframes grainShift { 0% { transform: translate3d(0, 0, 0); } 20% { transform: translate3d(-40px, 25px, 0); } 40% { transform: translate3d(30px, -35px, 0); } 60% { transform: translate3d(-25px, -15px, 0); } 80% { transform: translate3d(45px, 40px, 0); } 100% { transform: translate3d(0, 0, 0); } }
 
 
 /* ---------- scroll progress ---------- */
@@ -115,18 +115,9 @@ footer { position: relative; }
 @media (hover: hover) and (pointer: fine) { .foot-word:hover span { color: var(--accent); -webkit-text-stroke-color: var(--accent); } }
 .foot-word em { font-family: var(--serif); font-style: italic; font-weight: 400; text-transform: none; }
 
-/* ---------- page transition: iris from the click point, with the destination title card ---------- */
-html::before, html::after { content: ""; position: fixed; inset: 0; z-index: 400; pointer-events: none; clip-path: circle(0px at var(--wx, 50%) var(--wy, 50%)); }
-html::before { background: var(--accent); }
-html::after { content: attr(data-wipe); background: #131313; color: transparent; display: grid; place-items: center; text-align: center; padding: 0 6vw;
-  font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: clamp(54px, 15vw, 230px); line-height: .9; letter-spacing: .005em; }
-html.wipe-go::before { transition: clip-path .78s cubic-bezier(.7, 0, .2, 1); clip-path: circle(150vmax at var(--wx, 50%) var(--wy, 50%)); }
-html.wipe-go::after { transition: clip-path .78s cubic-bezier(.7, 0, .2, 1) .14s, color .4s .62s; clip-path: circle(150vmax at var(--wx, 50%) var(--wy, 50%)); color: #f6f5f1; }
-html.wipe-hold::before, html.wipe-hold::after { transition: none; clip-path: circle(150vmax at var(--wx, 50%) var(--wy, 50%)); }
-html.wipe-hold::after { color: #f6f5f1; }
-html.wipe-out::after { transition: clip-path .9s cubic-bezier(.7, 0, .2, 1); clip-path: circle(0px at var(--wx, 50%) var(--wy, 50%)); color: #f6f5f1; }
-html.wipe-out::before { transition: clip-path .9s cubic-bezier(.7, 0, .2, 1) .17s; clip-path: circle(0px at var(--wx, 50%) var(--wy, 50%)); }
-html.wipe-nt::before, html.wipe-nt::after { transition: none !important; }
+/* ---------- page transition: quick fade in (the fade out is body.leaving in style.css) ---------- */
+@keyframes pageIn { from { opacity: 0; } }
+body { animation: pageIn .3s var(--ease) both; }
 
 /* ---------- section rules draw themselves in ---------- */
 html.js-motion .section { border-top-color: transparent; position: relative; }
@@ -295,10 +286,3 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
   .bar-t i { transition: none !important; transform: scaleX(var(--v)) !important; }
 }
 
-/* phosphor scope: each figure is its own layer; brightness lives here so trail joints never double up */
-#bgField2 { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
-#bgField { opacity: .6; }
-#bgField2 { opacity: .34; }
-:root[data-theme="dark"] #bgField { opacity: .55; }
-:root[data-theme="dark"] #bgField2 { opacity: .3; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #bgField { opacity: .55; } :root:not([data-theme="light"]) #bgField2 { opacity: .3; } }
