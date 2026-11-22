@@ -220,10 +220,10 @@
     var sigHTML = sig.map(function (c, i) { return (i ? '<div class="carrow" aria-hidden="true"><i></i></div>' : "") + btn(c, idx[c.id]); }).join("");
     var ctlHTML = ctl.length ? '<div class="chain-ctl"><small>Gain-control path</small><div class="ctl-row">' + ctl.map(function (c, i) { return (i ? '<div class="carrow h" aria-hidden="true"><i></i></div>' : "") + btn(c, idx[c.id]); }).join("") + "</div>" + (S.chainNote ? '<p class="chain-note">' + esc(S.chainNote) + "</p>" : "") + "</div>" : "";
     var first = C[0];
-    return sec("Signal <em>chain</em>", "Click any block to see what it does, then jump to the page where it is designed.",
+    return sec("Signal <em>chain</em>", "Click any block for a quick visual explanation. The Design page has the calculations and the interactive simulator.",
       '<div class="chain" data-sel="' + esc(first.id) + '"><div class="chain-diagram glass ' + rv() + '"><div class="cbus" aria-hidden="true"><i></i></div><div class="chain-sig">' + sigHTML + "</div>" + ctlHTML + "</div>" +
-      '<aside class="chain-detail glass ' + rv() + '" aria-live="polite"><div class="cd-top"><span class="cd-n"></span><span class="tag blue cd-grp"></span></div><h3 class="cd-title"></h3><p class="cd-sub"></p><canvas class="cd-viz" aria-hidden="true"></canvas><p class="cd-info"></p><ul class="cd-facts"></ul>' +
-      '<div class="cd-actions"><a class="btn primary cd-link" href="#">Open page</a><button type="button" class="btn ghost cd-next">Next block →</button></div></aside></div>');
+      '<aside class="chain-detail glass ' + rv() + '" aria-live="polite"><div class="cd-top"><span class="cd-n"></span><span class="tag blue cd-grp"></span></div><h3 class="cd-title"></h3><p class="cd-info"></p><canvas class="cd-viz" aria-hidden="true"></canvas><dl class="cd-io"></dl>' +
+      '<div class="cd-actions"><a class="btn primary cd-link" href="#">Explore Design →</a><button type="button" class="btn ghost cd-prev">← Previous</button><button type="button" class="btn ghost cd-next">Next block →</button></div></aside></div>');
   }
   /* the gain-stage circuit, drawn as theme-aware SVG (ink wires, orange JFETs, serif-italic variables) */
   function circuitHTML(C) {
@@ -449,6 +449,7 @@
     var comps = D.components.length ? table(["Part", "Role", "Why chosen", "Alternatives", "Date"], D.components.map(function (c) { return R(["<b>" + esc(c.part) + "</b>", esc(c.role), esc(c.reason), esc(c.alternatives), fmtDate(c.date)]); })) : empty("Component selection pending", "Each part with the reason it was chosen and what it was chosen over.");
     var bom = D.bom.length ? table(["Part", "Value", "Qty", "Source", "Cost"], D.bom.map(function (b) { return R([esc(b.part), esc(b.value), esc(b.qty), esc(b.source), esc(b.cost)]); }), [2, 4]) : empty("BOM pending", "List every part before purchase.");
     return sec("Calculations", "Each calculation traceable to the FR it serves.", calcs) +
+      sec("Interactive <em>simulator</em>", "Change the input signal and the gain, and watch the whole chain respond. The oscilloscope, the engineering analysis, the schematic and the JFET all run from one simulation model.", '<div id="vga-sim" class="sim" data-circuit="' + esc(circuitHTML(S.architecture.circuit || {})) + '"><noscript>The simulator needs JavaScript.</noscript></div>', "simulator") +
       sec("Component selection", "", comps) +
       sec("Schematic and simulation", "", mediaGrid(D.media, "Schematic pending", "Add the schematic and the critical-block simulation with captions.")) +
       sec("Bill of materials", "", bom) + decisionsFor("design");

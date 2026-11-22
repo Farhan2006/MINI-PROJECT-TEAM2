@@ -27,9 +27,12 @@
   --ease-in-out: cubic-bezier(.77, 0, .175, 1);
   --spring: cubic-bezier(.2, .8, .2, 1);
   --r: 16px;
-  --maxw: 1120px;
+  --maxw: clamp(1120px, 86vw, 1440px);
+
   color-scheme: light;
 }
+/* the Design page is an engineering workspace: it uses ~92% of the viewport (about 1470px at 1600px), nav and footer included */
+body[data-page="design"] { --maxw: clamp(1120px, 92vw, 1600px); }
 :root[data-theme="dark"] {
   --bg: #131313;
   --fg: #f6f5f1;

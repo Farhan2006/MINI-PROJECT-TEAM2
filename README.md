@@ -24,8 +24,16 @@ Project Settings; never commit it). A correct password sets an HttpOnly session 
 If the variable is missing the admin is unavailable. There is no attempt limit at the edge: add a Vercel Firewall
 rate-limit rule on `POST /login` if the site is public.
 
+## Interactive simulator
+`assets/js/sim.js` is one simulation engine (conditioning, XADC, gain law, DAC, JFET, CA3140 limits). `assets/js/simui.js` draws
+everything from it: the live Signal Chain on Home (8 blocks, mini scopes, details panel) and, on the Design page, the generator,
+gain controller, oscilloscope, analysis, conditioning view, schematic and JFET view. All of them share one state, saved in the
+browser, so a change anywhere updates every view. Open `design.html?tab=cond|amp|jfet|analysis#simulator` to land on a tab.
+Parameters marked "Assumption" (filter order, DC shift, XADC range, CA3140 limits, JFET values) are illustrative until confirmed;
+change them in the Parameters tab. The microphone is a virtual input, not wired to the hardware. Needs https or localhost.
+
 ## Tests
-`node --test tests/auth.test.mjs` needs nothing. The browser tests also need Playwright:
+`node --test tests/auth.test.mjs tests/sim.test.mjs` need nothing. The browser tests also need Playwright:
 `PLAYWRIGHT_DIR=<folder with node_modules/playwright> node --test tests/`.
 
 ## Deploy on Vercel

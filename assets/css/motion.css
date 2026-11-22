@@ -171,11 +171,11 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
 /* ============================================================
    SIGNAL CHAIN (home): live scopes, packet glow, feedback bus
    ============================================================ */
-.chain { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; align-items: start; }
+.chain { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 .chain-diagram { position: relative; padding: 26px 70px 26px 26px; }
 .chain-sig { display: flex; flex-direction: column; }
 .cblock { box-sizing: border-box; width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; position: relative; overflow: hidden;
-  display: grid; grid-template-columns: auto 1fr 128px; gap: 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--stroke-strong); border-radius: 14px;
+  display: grid; grid-template-columns: auto 1fr clamp(130px, 14vw, 200px); gap: 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--stroke-strong); border-radius: 14px;
   background: color-mix(in srgb, var(--bg) 55%, transparent); transition: transform .5s var(--spring), background-color .3s, color .3s, border-color .3s; }
 @media (hover: hover) and (pointer: fine) { .cblock:hover { transform: translateY(-3px); border-color: var(--accent); } }
 .cblock:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -183,7 +183,7 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
 .cb-t { position: relative; min-width: 0; }
 .cb-t b { display: block; font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: 27px; line-height: 1; letter-spacing: .005em; }
 .cb-t span { display: block; font-size: 13px; color: var(--muted); margin-top: 5px; }
-.cviz { width: 128px; height: 48px; display: block; position: relative; }
+.cviz { width: clamp(130px, 14vw, 200px); height: 58px; display: block; position: relative; }
 .cblock.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .cblock.on .cb-t span { color: color-mix(in srgb, var(--bg) 62%, transparent); }
 .cblock.sig { animation: packet 7.5s ease-in-out infinite; }
@@ -191,23 +191,23 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
 @keyframes packet { 0%, 30%, 100% { box-shadow: none; } 10% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); } }
 .carrow { position: relative; width: 2px; height: 32px; margin: 0 auto; background: repeating-linear-gradient(180deg, var(--stroke-strong) 0 6px, transparent 6px 12px); }
 .carrow::after { content: ""; position: absolute; left: -4px; bottom: -2px; border: 5px solid transparent; border-top: 8px solid var(--fg); }
-.carrow::before { content: ""; position: absolute; left: -3px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: dotDownC 1.9s linear infinite; }
+.carrow::before { content: ""; position: absolute; left: -3px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: dotDownC var(--flow, 1.9s) linear infinite; }
 @keyframes dotDownC { from { top: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { top: calc(100% - 8px); opacity: 0; } }
 .chain-ctl { margin-top: 24px; padding-top: 16px; border-top: 1.5px dashed var(--stroke-strong); }
 .chain-ctl > small { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); font-weight: 600; margin-bottom: 12px; }
-.ctl-row { display: grid; grid-template-columns: 1fr 32px 1fr 32px 1fr; align-items: center; }
+.ctl-row { display: grid; grid-template-columns: 1fr 24px 1fr 24px 1fr 24px 1fr; align-items: center; }
 .cblock.ctl { grid-template-columns: 1fr; gap: 8px; padding: 12px 12px 10px; }
 .cblock.ctl .cb-n { position: absolute; right: 12px; top: 10px; }
-.cblock.ctl .cb-t b { font-size: 24px; }
-.cblock.ctl .cviz { width: 100%; height: 40px; }
+.cblock.ctl .cb-t b { font-size: 19px; }
+.cblock.ctl .cviz { width: 100%; height: 48px; }
 .carrow.h { width: 100%; height: 2px; background: repeating-linear-gradient(90deg, var(--stroke-strong) 0 6px, transparent 6px 12px); }
 .carrow.h::after { left: auto; right: -2px; bottom: auto; top: -4px; border: 5px solid transparent; border-left: 8px solid var(--fg); border-top-color: transparent; }
-.carrow.h::before { left: 0; top: -3px; animation: dotAcrossC 1.9s linear infinite; }
+.carrow.h::before { left: 0; top: -3px; animation: dotAcrossC var(--flow, 1.9s) linear infinite; }
 @keyframes dotAcrossC { from { left: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { left: calc(100% - 8px); opacity: 0; } }
 .chain-note { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
 .cbus { position: absolute; right: 12px; width: 58px; border: 2px dashed var(--stroke-strong); border-left: 0; border-radius: 0 14px 14px 0; pointer-events: none; }
 .cbus::after { content: ""; position: absolute; left: -2px; top: -6px; border: 5px solid transparent; border-right: 8px solid var(--accent); }
-.cbus i { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 12px var(--accent-2); animation: busRun 3s linear infinite; }
+.cbus i { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 12px var(--accent-2); animation: busRun var(--busdur, 3s) linear infinite; }
 @keyframes busRun { 0% { left: 0; top: 100%; opacity: 0; } 6% { opacity: 1; } 30% { left: 100%; top: 100%; } 70% { left: 100%; top: 0; } 94% { opacity: 1; } 100% { left: 0; top: 0; opacity: 0; } }
 
 .chain-detail { position: sticky; top: 92px; padding: 26px; overflow: hidden; }
@@ -217,28 +217,27 @@ html.js-motion .section.in-view::after { opacity: 1; animation: dotRun 1.5s cubi
 .cd-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .cd-n { font-size: 11.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
 .cd-title { font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: clamp(36px, 4.4vw, 54px); line-height: .92; margin: 16px 0 8px; }
-.cd-sub { color: var(--muted); font-size: 15px; }
-.cd-viz { width: 100%; height: 118px; display: block; margin: 18px 0; border-block: 1px solid var(--stroke); }
+.cd-viz { width: 100%; height: clamp(190px, 21vw, 260px); display: block; margin: 18px 0 4px; border-block: 1px solid var(--stroke); }
 .cd-info { font-size: 15.5px; line-height: 1.5; }
-.cd-facts { list-style: none; margin-top: 14px; }
-.cd-facts li { position: relative; padding: 8px 0 8px 22px; border-top: 1px solid var(--stroke); font-size: 14px; opacity: 1; }
-.cd-facts li::before { content: ""; position: absolute; left: 2px; top: 15px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-2); }
 .cd-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-.chain-detail.swap .cd-title, .chain-detail.swap .cd-sub, .chain-detail.swap .cd-info, .chain-detail.swap .cd-viz { animation: cdIn .6s cubic-bezier(.2, .8, .2, 1) both; }
-.chain-detail.swap .cd-sub { animation-delay: .05s; } .chain-detail.swap .cd-viz { animation-delay: .1s; } .chain-detail.swap .cd-info { animation-delay: .15s; }
-.chain-detail.swap .cd-facts li { animation: cdIn .6s cubic-bezier(.2, .8, .2, 1) both; }
-.chain-detail.swap .cd-facts li:nth-child(1) { animation-delay: .2s; } .chain-detail.swap .cd-facts li:nth-child(2) { animation-delay: .28s; } .chain-detail.swap .cd-facts li:nth-child(3) { animation-delay: .36s; } .chain-detail.swap .cd-facts li:nth-child(n+4) { animation-delay: .44s; }
+.chain-detail.swap .cd-title, .chain-detail.swap .cd-info, .chain-detail.swap .cd-viz { animation: cdIn .6s cubic-bezier(.2, .8, .2, 1) both; }
+.chain-detail.swap .cd-viz { animation-delay: .1s; } .chain-detail.swap .cd-info { animation-delay: .15s; }
 @keyframes cdIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (max-width: 960px) {
   .chain { grid-template-columns: 1fr; }
   .chain-detail { position: static; }
+  .cblock { grid-template-columns: auto 1fr; } .cblock .cviz { grid-column: 1 / -1; width: 100%; }
+  .cblock.ctl .cb-t b { font-size: 16px; } .cblock.ctl .cb-t span { font-size: 12px; }
+}
+/* phones: the gain-control path stacks (and the feedback bus, which needs the right-hand margin, is dropped) */
+@media (max-width: 640px) {
   .chain-diagram { padding-right: 26px; }
   .cbus { display: none; }
   .ctl-row { grid-template-columns: 1fr; }
   .carrow.h { width: 2px; height: 26px; margin: 0 auto; background: repeating-linear-gradient(180deg, var(--stroke-strong) 0 6px, transparent 6px 12px); }
   .carrow.h::after { left: -4px; right: auto; top: auto; bottom: -2px; border: 5px solid transparent; border-top: 8px solid var(--fg); }
   .carrow.h::before { left: -3px; top: 0; animation-name: dotDownC; }
-  .cblock { grid-template-columns: auto 1fr; } .cblock .cviz { grid-column: 1 / -1; width: 100%; }
+  .cblock.ctl .cb-t b { font-size: 19px; }
 }
 
 /* ---------- stagger delays ---------- */

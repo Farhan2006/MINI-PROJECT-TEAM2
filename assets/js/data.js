@@ -1020,92 +1020,16 @@ window.SITE = {
       "Evaluation of the effects of switching resistance, JFET nonlinearity and circuit component tolerances."
     ]
   },
-  "chainNote": "FPGA → DAC → JFET control voltage. This gain-control path adjusts the amplifier's feedback impedance.",
+  "chainNote": "FPGA → DAC → inverting op-amp → JFET. This gain-control path adjusts the amplifier's feedback impedance (dashed line back to the gain stage).",
   "chain": [
-    {
-      "id": "in",
-      "group": "signal",
-      "name": "Analog input signal",
-      "sub": "Audio / low-amplitude signal",
-      "page": "problem",
-      "viz": "wave-in",
-      "info": "The signal to be amplified enters here. Its amplitude varies, which is why a fixed gain is not enough. It stays in the analog path and is never routed through the FPGA.",
-      "facts": [
-        "Audio / low-amplitude analog signal",
-        "Amplitude range still to be measured (Vpp and Vrms)",
-        "Never passes through the FPGA"
-      ]
-    },
-    {
-      "id": "amp",
-      "group": "signal",
-      "name": "Op-amp variable gain stage",
-      "sub": "JFET-controlled feedback network",
-      "page": "architecture",
-      "viz": "wave-amp",
-      "info": "An op-amp with a JFET inside its feedback network. The control voltage changes the JFET's effective resistance, which changes the feedback impedance and therefore the gain.",
-      "facts": [
-        "Non-inverting: Av = 1 + Rf/Rg, with Rf set by the JFET",
-        "Gain becomes a function of the control voltage: Av = f(Vcontrol)",
-        "JFET nonlinearity may add distortion, to be measured"
-      ]
-    },
-    {
-      "id": "out",
-      "group": "signal",
-      "name": "Amplified analog output",
-      "sub": "Variable-amplitude output",
-      "page": "validation",
-      "viz": "wave-out",
-      "info": "The amplified signal. Its amplitude follows the commanded gain. Gain, bandwidth, THD, settling time and repeatability will be measured on the oscilloscope; the plan is on the Validation page.",
-      "facts": [
-        "Gain = Vout / Vin",
-        "Gain in dB = 20·log10 |Av|",
-        "No results are shown until they are measured"
-      ]
-    },
-    {
-      "id": "fpga",
-      "group": "control",
-      "name": "FPGA",
-      "sub": "Digital gain data",
-      "page": "design",
-      "viz": "bits",
-      "info": "Generates the digital gain-control data. It gives programmable, repeatable control of the gain. It does not process the analog signal unless an ADC is added.",
-      "facts": [
-        "Outputs digital control data only",
-        "Alternative considered: a manual DIP switch",
-        "The analog signal stays in the analog path"
-      ]
-    },
-    {
-      "id": "dac",
-      "group": "control",
-      "name": "DAC",
-      "sub": "Digital data to control voltage",
-      "page": "design",
-      "viz": "steps",
-      "info": "Converts the FPGA's digital value into the analog control voltage that sets the JFET's operating point. Its resolution and range are still to be fixed at component selection.",
-      "facts": [
-        "One DAC step is one gain step",
-        "Gain resolution depends on the DAC step and the JFET range",
-        "Settling time after a step will be measured"
-      ]
-    },
-    {
-      "id": "mos",
-      "group": "control",
-      "name": "JFET",
-      "sub": "Sets the feedback impedance",
-      "page": "concepts",
-      "viz": "curve",
-      "info": "Used as a voltage-controlled resistance in the op-amp feedback network, which allows continuous gain. Its resistance is not perfectly linear with control voltage, so the gain curve has to be characterised.",
-      "facts": [
-        "Gives potentially continuous gain",
-        "Resistance is not linear with control voltage or signal amplitude",
-        "Alternatives: CD4066BE switching, DIP switch"
-      ]
-    }
+    {"id": "in", "group": "signal", "name": "Analog input signal", "sub": "Audio / low-amplitude signal", "page": "design", "tab": "gen", "viz": "in", "info": "The low-amplitude audio signal that needs to be amplified. It stays in the analog path.", "in": "Audio source", "out": "Raw analog signal"},
+    {"id": "cond", "group": "signal", "name": "Input signal conditioning", "sub": "20 kHz LPF + buffer op-amp + positive DC level shift", "page": "design", "tab": "cond", "viz": "cond", "info": "Filters the input to approximately 20 kHz, buffers the signal and adds a positive DC offset. The conditioned signal is sent to the amplifier and the FPGA XADC.", "in": "Raw audio signal", "out": "Conditioned analog signal"},
+    {"id": "amp", "group": "signal", "name": "Op-amp variable gain stage", "sub": "CA3140 with JFET-controlled feedback network", "page": "design", "tab": "amp", "viz": "amp", "info": "A CA3140 op-amp with a JFET in its feedback network. The control voltage changes the JFET's resistance, which changes the gain.", "in": "Conditioned signal and JFET feedback", "out": "Amplified signal"},
+    {"id": "out", "group": "signal", "name": "Amplified analog output", "sub": "Variable-amplitude output", "page": "design", "tab": "scope", "viz": "out", "info": "The amplified signal. Its size follows the gain chosen by the FPGA, until the amplifier reaches its output limit.", "in": "Amplified signal", "out": "To the oscilloscope or load"},
+    {"id": "fpga", "group": "control", "name": "FPGA", "sub": "Digital gain calculation", "page": "design", "tab": "analysis", "viz": "fpga", "info": "Measures the conditioned input with its 12-bit XADC, works out the gain needed and sends a digital value to the DAC.", "in": "Conditioned signal (XADC)", "out": "Digital gain value"},
+    {"id": "dac", "group": "control", "name": "DAC", "sub": "Digital data to control voltage", "page": "design", "tab": "analysis", "viz": "dac", "info": "Converts the FPGA's digital value into a positive control voltage.", "in": "Digital value from the FPGA", "out": "Positive control voltage"},
+    {"id": "inv", "group": "control", "name": "Inverting unity-gain op-amp", "sub": "Control voltage inversion", "page": "design", "tab": "amp", "viz": "inv", "info": "Flips the positive control voltage into the negative gate voltage the JFET needs, keeping the same size.", "in": "Positive control voltage", "out": "Negative gate voltage"},
+    {"id": "jfet", "group": "control", "name": "JFET", "sub": "Voltage-controlled feedback impedance", "page": "design", "tab": "jfet", "viz": "jfet", "info": "Acts as a voltage-controlled resistor in the amplifier's feedback network. A more negative gate voltage narrows the channel and raises its resistance.", "in": "Negative gate voltage", "out": "Feedback impedance for the gain stage"}
   ],
   "signalSelection": {
     "intro": "This is the first engineering decision: selecting a suitable signal for the variable gain amplifier.",
