@@ -5,7 +5,7 @@
    Fails closed: if the variable is missing, the admin is unavailable. The same file runs locally via dev-server.mjs.
    shortcut: no per-IP attempt limit (the edge keeps no state); each wrong guess costs 300ms. Add a Vercel Firewall rate-limit rule on POST /login if the site is public. */
 export const config = {
-  matcher: ["/admin", "/admin.html", "/assets/js/admin.js", "/assets/css/admin.css", "/login", "/logout"]
+  matcher: ["/admin", "/admin.html", "/assets/js/admin.js", "/assets/css/admin.css", "/login", "/logout", "/api/admin/:path*"]
 };
 
 var COOKIE = "vdt_admin", TTL_SECONDS = 8 * 3600, enc = new TextEncoder();

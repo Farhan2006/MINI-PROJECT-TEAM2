@@ -41,11 +41,13 @@ function resolveFile(pathname) {
 http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://" + req.headers.host);
-    if (mw.config.matcher.includes(url.pathname)) {
+    if ((mw.config.matcher.includes(url.pathname) || url.pathname.startsWith("/api/admin/"))) {
       const hasBody = req.method !== "GET" && req.method !== "HEAD";
       const r = await mw.default(new Request(url, { method: req.method, headers: req.headers, body: hasBody ? await readBody(req) : undefined }));
       if (r.headers.get("x-middleware-next") !== "1") return send(res, r.status, Object.fromEntries(r.headers), Buffer.from(await r.arrayBuffer()));
     }
+    if (url.pathname === "/api/live") return send(res, 200, { "Content-Type": "text/javascript; charset=utf-8" }, "/* local dev: no Supabase, using data.js */");
+    if (url.pathname.startsWith("/api/admin/")) return send(res, 503, { "Content-Type": "application/json" }, '{"error":"Saving needs Supabase, which only runs on Vercel. Use the live site admin."}');
     if (req.method !== "GET" && req.method !== "HEAD") return send(res, 405, { Allow: "GET, HEAD" }, "Method not allowed");
     const file = resolveFile(url.pathname);
     if (!file) return send(res, 404, { "Content-Type": "text/plain; charset=utf-8" }, "Not found: " + url.pathname);

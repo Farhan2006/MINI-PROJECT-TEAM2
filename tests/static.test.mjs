@@ -25,14 +25,14 @@ test("admin and login are marked noindex", () => { for (const f of ["admin.html"
 test("every public page loads the same scripts in order, and the simulator scripts only where used", () => {
   for (const f of publicPages) {
     const src = [...read(f).matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]), sim = /design|index/.test(f);
-    assert.deepEqual(src.filter((x) => !/sim/.test(x)), ["assets/js/data.js", "assets/js/site.js", "assets/js/motion.js"], f);
+    assert.deepEqual(src.filter((x) => !/sim/.test(x)), ["assets/js/data.js", "/api/live", "assets/js/site.js", "assets/js/motion.js"], f);
     assert.equal(src.includes("assets/js/simui.js"), sim, f + " simui.js");
     if (sim) assert.ok(src.indexOf("assets/js/sim.js") < src.indexOf("assets/js/simui.js"), f + ": engine before UI");
   }
 });
 
 test("every local file referenced from a page exists", () => {
-  for (const f of html) for (const m of read(f).matchAll(/(?:href|src)="((?!https?:|data:|mailto:|#)[^"]+)"/g)) { const p = m[1].split(/[?#]/)[0]; if (p) assert.ok(existsSync(path.join(root, p)), `${f} -> ${p}`); }
+  for (const f of html) for (const m of read(f).matchAll(/(?:href|src)="((?!https?:|data:|mailto:|#|\/api\/)[^"]+)"/g)) { const p = m[1].split(/[?#]/)[0]; if (p) assert.ok(existsSync(path.join(root, p)), `${f} -> ${p}`); }
 });
 
 test("data.js: page list points at real files, chain tabs are valid, local media exists", () => {
